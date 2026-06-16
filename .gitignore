@@ -1,0 +1,19 @@
+# Oracle Instant Client (download separately from oracle.com)
+instantclient_*/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+
+# Config with local settings
+config.ini
+user_config.dat
