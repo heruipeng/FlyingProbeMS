@@ -959,6 +959,21 @@ class FlyingProbeCoreProcessor:
                 drill_layer.append(info['gROWname'][k])
         return drill_layer
 
+    def _delete_outside_features(self):
+        """删除板外物件"""
+        logger.info(f"【{self.raw_job}】开始板外物件")
+        self.gen.COM('clear_layers')
+        self.gen.COM('affected_layer,name=,mode=all,affected=no')
+        self.gen.COM('filter_reset,filter_name=popup')
+        info = self.gen.DO_INFO(f'-t matrix -e {self.internal_job}/matrix -d ROW -m script')
+        for n in range(len(info['gROWname'])):
+            name = info['gROWname'][n]
+            self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
+        self.gen.COM('clip_area_strt')
+        self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
+        self.gen.COM('affected_layer,name=,mode=all,affected=no')
+        logger.info(f"【{self.raw_job}】完成板外物件")
+
     def _add_drill_attr(self):
         """添加钻孔属性"""
         logger.info(f"【{self.raw_job}】开始添加镭射、埋孔钻孔属性")
@@ -1095,6 +1110,7 @@ class FlyingProbeCoreProcessor:
                 self.import_orig()
             self._dfm_nfp_removal()
             self._add_drill_attr()
+            self._delete_outside_features()
             self.run_net_compare(self.run_step, '原稿')
 
     def process_single_mode(self, test_mode):
