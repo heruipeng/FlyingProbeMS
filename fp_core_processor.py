@@ -949,14 +949,14 @@ class FlyingProbeCoreProcessor:
             typ = info['gROWlayer_type'][n]
             side = info['gROWside'][n]
             if ctx == 'board' and typ == 'drill' and re.search(re.compile('^\d+d$'),name):
-                self.gen.COM(f'affected_layer,name={k},mode=single,affected=yes')
+                self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
                 self.gen.COM('filter_area_strt')
                 self.gen.COM('filter_area_end,layer=,filter_name=popup,operation=select,area_type=none,inside_area=no,intersect_area=no,lines_only=no,ovals_only=no,min_len=0,max_len=100,min_angle=0,max_angle=0')
                 self.gen.COM('get_select_count')
                 if int(self.gen.COMANS) > 0:
                     self.gen.COM('cur_atr_set,attribute=.drill,option=via')
                     self.gen.COM('sel_change_atr,mode=replace')
-                self.gen.COM(f'affected_layer,name={k},mode=single,affected=no')
+                self.gen.COM(f'affected_layer,name={name},mode=single,affected=no')
         # self.gen.PAUSE('xxxxxxxxxxx')
         logger.info(f"【{self.raw_job}】完成添加镭射、埋孔钻孔属性")
 
