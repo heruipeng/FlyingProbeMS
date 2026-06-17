@@ -1158,7 +1158,8 @@ class FlyPinWindow(QMainWindow):
             else:
                 t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['REVISION_ID'])
                 if t:
-                    if t['CHECK_TYPE'] is None and t['CHECK_STATUS'] is None:
+                    # print(t['CHECK_TYPE'],t['CHECK_STATUS'])
+                    if (t['CHECK_TYPE'] is None or t['CHECK_TYPE'].strip() == '') and (t['CHECK_STATUS'] is None or t['CHECK_STATUS'].strip() == ''):
                         self._update_basic_table(
                             check_type,
                             check_status,
