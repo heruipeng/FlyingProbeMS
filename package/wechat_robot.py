@@ -105,10 +105,10 @@ if __name__ == '__main__':
     # # 示例1：发送消息
     # from wechat_robot import WechatRobotSender
     # # 初始化机器人（替换为你的真实webhook）
-    webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b3cd73ca-8988-49cb-8630-37c74aec1680"
+    webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=cdfac7dc-04fe-4954-b0f7-7b01a6e23921"
     robot = WechatRobotSender(webhook_url)
     # 发送文本消息并@指定人
     robot.send_text(
-        content=u"服务器CPU使用率超过90%！",
+        content=u"测试信息！",
         mentioned_mobiles=["024864"]
     )

@@ -937,7 +937,7 @@ class FlyPinWindow(QMainWindow):
         else:
             return dict()
 
-    def _get_basic_table(self,ORGANIZATION_ID,INVENTORY_ITEM_ID,REVISION_ID):
+    def _get_basic_table(self,ORGANIZATION_ID,INVENTORY_ITEM_ID,ITEM_REV):
         sql = f"""SELECT
             *
         FROM 
@@ -945,7 +945,8 @@ class FlyPinWindow(QMainWindow):
         WHERE
             tt.ORGANIZATION_ID = {ORGANIZATION_ID}
             AND tt.INVENTORY_ITEM_ID = {INVENTORY_ITEM_ID}
-            AND tt.REVISION_ID = {REVISION_ID}"""
+            AND tt.REVISION = {ITEM_REV}
+            """
         logger.info(f"""通过ID查询Cux_Mi_Checkmt基表是否有数据:\n{sql}""")
         db = self.init_erp_database_connection()
         if not db: return
@@ -960,7 +961,7 @@ class FlyPinWindow(QMainWindow):
 
         sql = f"""
             UPDATE
-                Cux.Cux_Mi_Checkmt t
+                Cux.Cux_Mi_Checkmt
             SET 
                 CHECK_TYPE = '{kwargs[0]}' ,
                 CHECK_STATUS = '{kwargs[1]}' ,
@@ -970,11 +971,9 @@ class FlyPinWindow(QMainWindow):
                 CHECK_MEMO = '{kwargs[5]}',
                 ATTRIBUTE1 = '{kwargs[6]}'
             WHERE
-                t.ORGANIZATION_ID = {kwargs[7]}
-                AND t.INVENTORY_ITEM_ID = {kwargs[8]}
-                AND t.REVISION_ID = {kwargs[9]}
-                AND t.ROUTING_SEQUENCE_ID = {kwargs[10]}
-                AND t.OPERATION_SEQUENCE_ID = {kwargs[11]}
+                ORGANIZATION_ID = {kwargs[7]}
+                AND INVENTORY_ITEM_ID = {kwargs[8]}
+                AND REVISION = {kwargs[9]}
         """
         logger.info(f"""查询Cux_Mi_Checkmt没数据，则插入数据:\n{sql}""")
         db = self.init_erp_database_connection()
@@ -1156,35 +1155,31 @@ class FlyPinWindow(QMainWindow):
                 QMessageBox.warning(self, "上传失败", f"未查询到 {self.current_pn} 对应ERP基础数据！")
                 # return
             else:
-                t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['REVISION_ID'])
+                t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['ITEM_REV'])
                 if t:
-                    # print(t['CHECK_TYPE'],t['CHECK_STATUS'])
-                    if (t['CHECK_TYPE'] is None or t['CHECK_TYPE'].strip() == '') and (t['CHECK_STATUS'] is None or t['CHECK_STATUS'].strip() == ''):
-                        self._update_basic_table(
-                            check_type,
-                            check_status,
-                            last_update_date,
-                            last_update_date,
-                            last_updated_by,
-                            remark,
-                            attribute1,
-                            rep['ORGANIZATION_ID'],
-                            rep['INVENTORY_ITEM_ID'],
-                            rep['REVISION_ID'],
-                            rep['ROUTING_SEQUENCE_ID'],
-                            rep['OPERATION_SEQUENCE_ID']
-                        )
-                        QMessageBox.information(
-                            self, "更新成功",
-                            f"✅ 更新成功！\n\n"
-                            f"检查类型：{check_type}\n"
-                            f"检查状态：{check_status}\n"
-                            f"备注：{remark}\n"
-                            f"测试点数：{attribute1}\n"
-                            f"创建人：{created_by}"
-                        )
-                    else:
-                        QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,基表已存在数据。")
+                    self._update_basic_table(
+                        check_type,
+                        check_status,
+                        last_update_date,
+                        last_update_date,
+                        last_updated_by,
+                        remark,
+                        attribute1,
+                        rep['ORGANIZATION_ID'],
+                        rep['INVENTORY_ITEM_ID'],
+                        rep['ITEM_REV']
+                    )
+                    QMessageBox.information(
+                        self, "更新成功",
+                        f"✅ 更新成功！\n\n"
+                        f"检查类型：{check_type}\n"
+                        f"检查状态：{check_status}\n"
+                        f"备注：{remark}\n"
+                        f"测试点数：{attribute1}\n"
+                        f"创建人：{created_by}"
+                    )
+                    # else:
+                    #     QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,基表已存在数据。")
                     return
                 else:
                     s = self._insert_basic_table(

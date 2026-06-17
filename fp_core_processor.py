@@ -60,6 +60,9 @@ from package.genCOM_36 import GEN_COM
 from PyQt5.QtWidgets import QDialog, QApplication
 from package.MessageBox import MessageBox
 
+# from package.wechat_robot import WechatRobotSender
+# webhook_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b3cd73ca-8988-49cb-8630-37c74aec1680"
+
 # ======================== 系统全局配置 ========================
 LOG_TO_FILE = True
 CAM_BASE_PATH = r'D:\eastek-server\ezFixtureII'
@@ -864,9 +867,23 @@ class FlyingProbeCoreProcessor:
         logger.info(f"\n=============== 开始输出【{mode}】资料 ===============")
         job = self.internal_job
         if self.mode in ['check','input']:
+            if mode == '4w' and self.mode == 'check':
+                job = self.internal_job + '-4w'
+                self.clean_existing_job(job)
+                self.import_job_from_tgz(job)
+                self.gen.COM(f'check_inout,mode=out,type=job,job={job}')
+                self.open_job(job)
+                self.open_step(job, self.run_step)
+                self.gen.COM('units,type=inch')
+                self.delete_non_board_layers()
+
+                # show_error_message("温馨提示", '请认真核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
+                self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
+
             s = show_error_message("温馨提示", f'是否需要重新输出{mode}资料?...')
             if s != 16:
                 return ''
+
         else:
             if mode == '4w':
                 job = self.internal_job + '-4w'
