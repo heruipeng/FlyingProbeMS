@@ -147,12 +147,18 @@ FACTORY_ID_TO_NUM = {v: k for k, v in FACTORY_MAP_NUM.items()}
 
 def safe_kill_process(process_name):
     try:
-        for proc in psutil.process_iter(['pid', 'name']):
-            try:
-                if proc.info["name"] and proc.info["name"].lower() == process_name.lower():
-                    os.system(f"taskkill /f /pid {proc.info['pid']}")
-            except:
-                continue
+        subprocess.run(
+            ["taskkill", "/F", "/IM", process_name],
+            capture_output=True,
+            creationflags=0x08000000  # 隐藏cmd黑窗口
+        )
+        # for proc in psutil.process_iter(['pid', 'name']):
+        #     try:
+        #         logger.info(f'{proc.info["name"]}')
+        #         if proc.info["name"] and proc.info["name"].lower() == process_name.lower():
+        #             os.system(f"taskkill /f /pid {proc.info['pid']}")
+        #     except:
+        #         continue
     except:
         pass
 
@@ -817,6 +823,9 @@ class FlyPinWindow(QMainWindow):
         try:
             for f in [f"{mode}_success.flag", f"{mode}_fail.flag"]:
                 if os.path.exists(f): os.remove(f)
+
+            os.getenv('hostname')
+
             safe_kill_process(TARGET_PROCESS_NAME)
             script = FP_CORE_SCRIPT_PATH
             subprocess.Popen([EZFIXTURE_EXE_PATH,"-u","g","-p","g","-s",script,f"--script-param={fc},{did},{name},{mode},{user},{output_mode}"], env=os.environ.copy(), creationflags=subprocess.CREATE_NEW_CONSOLE).wait()

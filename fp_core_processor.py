@@ -128,9 +128,15 @@ for proc in psutil.process_iter(["pid","name"]):
     except:
         pass
 '''
-    subprocess.Popen(
-        [sys.executable, "-c", kill_script],
-        creationflags=subprocess.CREATE_NO_WINDOW
+    # subprocess.Popen(
+    #     [sys.executable, "-c", kill_script],
+    #     creationflags=subprocess.CREATE_NO_WINDOW
+    # )
+
+    subprocess.run(
+        ["taskkill", "/F", "/IM", EZFIXTURE_PROCESS],
+        capture_output=True,
+        creationflags=0x08000000  # 隐藏cmd黑窗口
     )
 
 
