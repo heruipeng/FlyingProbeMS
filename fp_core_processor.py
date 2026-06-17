@@ -960,7 +960,7 @@ class FlyingProbeCoreProcessor:
         return drill_layer
 
     def _delete_outside_features(self):
-        """删除板外物件"""
+        """删除板外物件、外形线"""
         logger.info(f"【{self.raw_job}】开始板外物件")
         self.gen.COM('clear_layers')
         self.gen.COM('affected_layer,name=,mode=all,affected=no')
