@@ -1166,29 +1166,30 @@ class FlyPinWindow(QMainWindow):
             else:
                 t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['ITEM_REV'])
                 if t:
-                    self._update_basic_table(
-                        check_type,
-                        check_status,
-                        last_update_date,
-                        last_update_date,
-                        last_updated_by,
-                        remark,
-                        attribute1,
-                        rep['ORGANIZATION_ID'],
-                        rep['INVENTORY_ITEM_ID'],
-                        rep['ITEM_REV']
-                    )
-                    QMessageBox.information(
-                        self, "更新成功",
-                        f"✅ 更新成功！\n\n"
-                        f"检查类型：{check_type}\n"
-                        f"检查状态：{check_status}\n"
-                        f"备注：{remark}\n"
-                        f"测试点数：{attribute1}\n"
-                        f"创建人：{created_by}"
-                    )
-                    # else:
-                    #     QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,基表已存在数据。")
+                    if check_status is None or check_status == '':
+                        self._update_basic_table(
+                            check_type,
+                            check_status,
+                            last_update_date,
+                            last_update_date,
+                            last_updated_by,
+                            remark,
+                            attribute1,
+                            rep['ORGANIZATION_ID'],
+                            rep['INVENTORY_ITEM_ID'],
+                            rep['ITEM_REV']
+                        )
+                        QMessageBox.information(
+                            self, "更新成功",
+                            f"✅ 更新成功！\n\n"
+                            f"检查类型：{check_type}\n"
+                            f"检查状态：{check_status}\n"
+                            f"备注：{remark}\n"
+                            f"测试点数：{attribute1}\n"
+                            f"创建人：{created_by}"
+                        )
+                    else:
+                        QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,工具状态不是空,不更新。如需更新请登入ERP手动更新")
                     return
                 else:
                     s = self._insert_basic_table(

@@ -961,7 +961,7 @@ class FlyingProbeCoreProcessor:
 
     def _delete_outside_features(self):
         """删除板外物件、外形线"""
-        logger.info(f"【{self.raw_job}】开始板外物件")
+        logger.info(f"【{self.raw_job}】开始清理板外物件、外形线")
         self.gen.COM('clear_layers')
         self.gen.COM('affected_layer,name=,mode=all,affected=no')
         self.gen.COM('filter_reset,filter_name=popup')
@@ -972,7 +972,7 @@ class FlyingProbeCoreProcessor:
         self.gen.COM('clip_area_strt')
         self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
         self.gen.COM('affected_layer,name=,mode=all,affected=no')
-        logger.info(f"【{self.raw_job}】完成板外物件")
+        logger.info(f"【{self.raw_job}】完成清理板外物件、外形线")
 
     def _add_drill_attr(self):
         """添加钻孔属性"""
@@ -986,7 +986,7 @@ class FlyingProbeCoreProcessor:
             ctx = info['gROWcontext'][n]
             typ = info['gROWlayer_type'][n]
             side = info['gROWside'][n]
-            if ctx == 'board' and typ == 'drill' and re.search(re.compile('^\d+d$'),name):
+            if ctx == 'board' and typ == 'drill' and re.search(re.compile('^\d+d$|sz'),name):
                 self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
                 self.gen.COM('filter_area_strt')
                 self.gen.COM('filter_area_end,layer=,filter_name=popup,operation=select,area_type=none,inside_area=no,intersect_area=no,lines_only=no,ovals_only=no,min_len=0,max_len=100,min_angle=0,max_angle=0')
