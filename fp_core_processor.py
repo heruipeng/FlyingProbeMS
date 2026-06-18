@@ -889,6 +889,9 @@ class FlyingProbeCoreProcessor:
             s = show_error_message("温馨提示", f'是否需要重新输出{mode}资料?...')
             if s != 16:
                 return ''
+            else:
+                # 保存资料
+                self.gen.COM(f'save_job,job={job},override=no')
 
         else:
             if mode == '4w':
@@ -969,9 +972,10 @@ class FlyingProbeCoreProcessor:
         for n in range(len(info['gROWname'])):
             name = info['gROWname'][n]
             self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
-        self.gen.COM('clip_area_strt')
-        self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
-        self.gen.COM('affected_layer,name=,mode=all,affected=no')
+            self.gen.COM('clip_area_strt')
+            self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
+            self.gen.COM(f'affected_layer,name={name},mode=single,affected=no')
+        # self.gen.COM('affected_layer,name=,mode=all,affected=no')
         logger.info(f"【{self.raw_job}】完成清理板外物件、外形线")
 
     def _add_drill_attr(self):

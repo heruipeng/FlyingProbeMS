@@ -1166,7 +1166,8 @@ class FlyPinWindow(QMainWindow):
             else:
                 t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['ITEM_REV'])
                 if t:
-                    if check_status is None or check_status == '':
+                    # print(check_status,'*********'.strip())
+                    if t['CHECK_STATUS'] is None or t['CHECK_STATUS'].strip() == '':
                         self._update_basic_table(
                             check_type,
                             check_status,
@@ -1189,8 +1190,8 @@ class FlyPinWindow(QMainWindow):
                             f"创建人：{created_by}"
                         )
                     else:
-                        QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,工具状态不是空,不更新。如需更新请登入ERP手动更新")
-                    return
+                        QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,治具状态不是空,不更新。如需更新请登入ERP手动更新")
+                    # return
                 else:
                     s = self._insert_basic_table(
                         rep['ORGANIZATION_ID'],
