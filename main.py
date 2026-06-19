@@ -875,11 +875,11 @@ class FlyPinWindow(QMainWindow):
         detail_layout.setContentsMargins(0, 0, 0, 0)
         self.report_detail_table = QTableWidget()
         self.report_detail_table.setFont(GLOBAL_FONT)
-        self.report_headers = ["序号", "厂区", "料号", "版本", "工序", "状态", "创建时间",
+        self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
                                "2W点数", "4W点数", "输出人", "检查人", "输出耗时"]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
-        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 110, 5: 80, 6: 140, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80}
+        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 140, 6: 200, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80}
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
@@ -1031,29 +1031,14 @@ class FlyPinWindow(QMainWindow):
 
             where_sql = " AND ".join(where_clauses)
 
-            sql = f"""SELECT * FROM (
-                SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
+            sql = f"""SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
                        us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
                        us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
                        us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-                       us.ATTRIBUTE14,us.ATTRIBUTE15,
-                       A.OPERATION_DESCRIPTION,
-                       ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15)
-                           ORDER BY A.OPERATION_SEQ_NUM DESC) RN
+                       us.ATTRIBUTE14,us.ATTRIBUTE15
                 FROM inp.inp_flypin_probe_tool_alert us
-                JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID
-                    AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO
                 WHERE {where_sql}
-            ) WHERE RN=1 ORDER BY CREATION_DATE DESC"""
-
-            sql = f"""
-                            SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
-                                   us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
-                                   us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
-                                   us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-                                   us.ATTRIBUTE14,us.ATTRIBUTE15
-                            FROM inp.inp_flypin_probe_tool_alert us
-                            WHERE {where_sql}"""
+                ORDER BY us.CREATION_DATE DESC"""
 
             db = self.init_erp_database_connection()
             raw = db.SELECT_DIC(sql) if db else []
@@ -1244,14 +1229,19 @@ class FlyPinWindow(QMainWindow):
             factory = FACTORY_ID_TO_NAME.get(org, org)
             status = get_status(r.get("ATTRIBUTE16"))
 
+            remark = str(r.get("REMARK") or "")
+            # 截断过长备注
+            if len(remark) > 60:
+                remark = remark[:57] + "..."
+
             items_data = [
                 str(s + i + 1),
                 factory,
                 str(r.get("ITEM_NO") or ""),
                 str(r.get("REV") or ""),
-                str(r.get("OPERATION_DESCRIPTION") or ""),
                 status,
                 str(r.get("CREATION_DATE") or ""),
+                remark,
                 str(r.get("ATTRIBUTE10") or ""),
                 str(r.get("ATTRIBUTE11") or ""),
                 user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
@@ -1265,7 +1255,7 @@ class FlyPinWindow(QMainWindow):
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
-            st_item = table.item(i, 5)
+            st_item = table.item(i, 4)
             if st_item:
                 st_item.setForeground(status_color(status))
 
@@ -1396,8 +1386,8 @@ class FlyPinWindow(QMainWindow):
                         status = self.get_work_status(r.get("ATTRIBUTE16"))
                         writer.writerow([
                             factory, str(r.get("ITEM_NO") or ""), str(r.get("REV") or ""),
-                            str(r.get("OPERATION_DESCRIPTION") or ""), status,
-                            str(r.get("CREATION_DATE") or ""),
+                            status, str(r.get("CREATION_DATE") or ""),
+                            str(r.get("REMARK") or ""),
                             str(r.get("ATTRIBUTE10") or ""), str(r.get("ATTRIBUTE11") or ""),
                             self.user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
                             self.user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
