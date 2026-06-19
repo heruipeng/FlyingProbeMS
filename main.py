@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
                              QDialog, QFormLayout, QDialogButtonBox,
-                             QToolBox, QStackedWidget, QFileDialog)
+                             QStackedWidget, QFileDialog)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
@@ -145,43 +145,46 @@ QLineEdit,QComboBox,QDateEdit{{border:1px solid {GRAY_BORDER};border-radius:6px;
 QLineEdit:focus,QComboBox:focus,QDateEdit:focus{{border:1px solid {PRIMARY_COLOR};}}
 """
 
-# ===================== Toolbox 侧边栏样式 =====================
-TOOLBOX_STYLE = f"""
-QToolBox {{
+# ===================== 侧边栏导航样式 =====================
+SIDEBAR_STYLE = f"""
+QFrame#sidebar {{
     background: {WHITE};
     border: 1px solid {GRAY_BORDER};
     border-radius: 8px;
-    padding: 0px;
 }}
-QToolBox::tab {{
+"""
+
+NAV_BTN_NORMAL = f"""
+QPushButton {{
     background: {WHITE};
     color: {GRAY_TEXT_DARK};
+    border: none;
+    border-bottom: 1px solid {GRAY_BORDER};
+    border-radius: 0px;
     font-family: 微软雅黑;
     font-size: 11pt;
     font-weight: bold;
-    padding: 14px 20px;
-    border-bottom: 1px solid {GRAY_BORDER};
     text-align: left;
+    padding: 16px 20px;
 }}
-QToolBox::tab:selected {{
+QPushButton:hover {{
+    background: {PRIMARY_LIGHT};
+    color: {PRIMARY_COLOR};
+}}
+QPushButton:checked {{
     background: {PRIMARY_LIGHT};
     color: {PRIMARY_COLOR};
     border-left: 3px solid {PRIMARY_COLOR};
 }}
-QToolBox::tab:hover {{
-    background: {GRAY_LIGHT};
-}}
-QToolBox::tab:first {{
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}}
-QToolBox::tab:last {{
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-}}
-QToolBox QScrollArea {{
-    border: none;
-    background: {WHITE};
+"""
+
+SIDEBAR_HEADER_STYLE = f"""
+QLabel {{
+    color: {PRIMARY_COLOR};
+    font-family: 微软雅黑;
+    font-size: 13pt;
+    font-weight: bold;
+    padding: 16px 20px;
 }}
 """
 
@@ -350,7 +353,7 @@ class FlyPinWindow(QMainWindow):
         except Exception as e:
             logger.error(f"数据库初始化失败：{str(e)}")
 
-    # ==================== 主界面（Toolbox + StackedWidget 布局）====================
+    # ==================== 主界面（侧边导航 + StackedWidget 布局）====================
     def init_ui(self):
         now = datetime.now().strftime("%Y-%m-%d")
         self.setWindowTitle(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {now}  当前用户:{self.USER_NAME}")
@@ -367,12 +370,59 @@ class FlyPinWindow(QMainWindow):
         self.setCentralWidget(central)
         main_layout = QHBoxLayout(central)
         main_layout.setSpacing(0)
-        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setContentsMargins(8, 8, 8, 8)
 
-        # ========== 左侧 Toolbox 导航菜单 ==========
-        self.toolbox = QToolBox()
-        self.toolbox.setFixedWidth(180)
-        self.toolbox.setStyleSheet(TOOLBOX_STYLE)
+        # ========== 左侧导航菜单（自定义侧边栏）==========
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(200)
+        sidebar.setStyleSheet(SIDEBAR_STYLE)
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
+
+        # 顶部标题
+        header_label = QLabel("📋 导航菜单")
+        header_label.setStyleSheet(SIDEBAR_HEADER_STYLE)
+        header_label.setFixedHeight(52)
+        sidebar_layout.addWidget(header_label)
+
+        # 分隔线
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setStyleSheet(f"QFrame{{color:{GRAY_BORDER};margin:0 20px;}}")
+        sidebar_layout.addWidget(sep)
+
+        # 导航按钮
+        self.btn_nav_task = QPushButton("📋  任务管理")
+        self.btn_nav_report = QPushButton("📊  报表管理")
+
+        self.btn_nav_task.setCheckable(True)
+        self.btn_nav_report.setCheckable(True)
+        self.btn_nav_task.setChecked(True)
+
+        self.btn_nav_task.setFixedHeight(50)
+        self.btn_nav_report.setFixedHeight(50)
+
+        self.btn_nav_task.setStyleSheet(NAV_BTN_NORMAL)
+        self.btn_nav_report.setStyleSheet(NAV_BTN_NORMAL)
+
+        # 导航按钮组（互斥）
+        self.nav_buttons = [self.btn_nav_task, self.btn_nav_report]
+        for i, btn in enumerate(self.nav_buttons):
+            btn.clicked.connect(lambda checked, idx=i: self.on_nav_clicked(idx))
+
+        sidebar_layout.addWidget(self.btn_nav_task)
+        sidebar_layout.addWidget(self.btn_nav_report)
+        sidebar_layout.addStretch()
+
+        # 底部版权
+        footer_label = QLabel(f"<div style='text-align:center;line-height:1.4;'>"
+                              f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>{self.SOFTWARE_NAME}</span><br>"
+                              f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>V{self.SOFTWARE_VERSION}</span></div>")
+        footer_label.setFixedHeight(50)
+        footer_label.setAlignment(Qt.AlignCenter)
+        sidebar_layout.addWidget(footer_label)
 
         # ========== 右侧 QStackedWidget 页面容器 ==========
         self.stacked = QStackedWidget()
@@ -386,21 +436,16 @@ class FlyPinWindow(QMainWindow):
         self.report_page = self.create_report_page()
         self.stacked.addWidget(self.report_page)
 
-        # Toolbox 添加两个导航项
-        self.toolbox.addItem(QWidget(), "📋  任务管理")
-        self.toolbox.addItem(QWidget(), "📊  报表管理")
-
-        self.toolbox.currentChanged.connect(self.on_toolbox_changed)
-
         # 组装布局
-        main_layout.addWidget(self.toolbox)
+        main_layout.addWidget(sidebar)
         main_layout.addWidget(self.stacked)
 
-    def on_toolbox_changed(self, index):
-        """导航菜单切换时同步页面"""
+    def on_nav_clicked(self, index):
+        """导航菜单切换"""
+        for i, btn in enumerate(self.nav_buttons):
+            btn.setChecked(i == index)
         self.stacked.setCurrentIndex(index)
         if index == 1:
-            # 切换到报表页时自动刷新数据
             self.refresh_report()
 
     # ==================== 任务管理页面 ====================
