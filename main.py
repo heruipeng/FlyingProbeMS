@@ -9,6 +9,7 @@ Email           : 502614708@qq.com
 CreateTime      : 2026-4-28
 ProjectName     : FlyingProbeMS
 Description     : 飞针测试资料管理系统（修复详情空白+全局行号）
+                  V2.1 - 新增左侧导航菜单 + 报表管理模块
 #---------------------------------------------------------#
 """
 import os
@@ -24,7 +25,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QTableWidget, QTableWidgetItem, QPushButton, QLineEdit,
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
-                             QDialog, QFormLayout,QDialogButtonBox)
+                             QDialog, QFormLayout, QDialogButtonBox,
+                             QToolBox, QStackedWidget, QFileDialog)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
@@ -70,6 +72,7 @@ GLOBAL_FONT = QFont("微软雅黑", 9)
 BOLD_FONT = QFont("微软雅黑", 9, QFont.Bold)
 TITLE_FONT = QFont("微软雅黑", 11, QFont.Bold)
 EMPTY_FONT = QFont("微软雅黑", 10)
+LARGE_FONT = QFont("微软雅黑", 18, QFont.Bold)
 
 PRIMARY_COLOR = "#409EFF"
 PRIMARY_LIGHT = "#ECF5FF"
@@ -81,6 +84,9 @@ GRAY_TEXT_DARK = "#303133"
 GRAY_TEXT_NORMAL = "#606266"
 GRAY_TEXT_LIGHT = "#909399"
 WHITE = "#FFFFFF"
+SUCCESS_COLOR = "#67C23A"
+DANGER_COLOR = "#F56C6C"
+WARNING_COLOR = "#E6A23C"
 
 GLOBAL_STYLE = f"""
 QMainWindow{{background-color:{GRAY_LIGHT};}}
@@ -139,6 +145,46 @@ QLineEdit,QComboBox,QDateEdit{{border:1px solid {GRAY_BORDER};border-radius:6px;
 QLineEdit:focus,QComboBox:focus,QDateEdit:focus{{border:1px solid {PRIMARY_COLOR};}}
 """
 
+# ===================== Toolbox 侧边栏样式 =====================
+TOOLBOX_STYLE = f"""
+QToolBox {{
+    background: {WHITE};
+    border: 1px solid {GRAY_BORDER};
+    border-radius: 8px;
+    padding: 0px;
+}}
+QToolBox::tab {{
+    background: {WHITE};
+    color: {GRAY_TEXT_DARK};
+    font-family: 微软雅黑;
+    font-size: 11pt;
+    font-weight: bold;
+    padding: 14px 20px;
+    border-bottom: 1px solid {GRAY_BORDER};
+    text-align: left;
+}}
+QToolBox::tab:selected {{
+    background: {PRIMARY_LIGHT};
+    color: {PRIMARY_COLOR};
+    border-left: 3px solid {PRIMARY_COLOR};
+}}
+QToolBox::tab:hover {{
+    background: {GRAY_LIGHT};
+}}
+QToolBox::tab:first {{
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}}
+QToolBox::tab:last {{
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}}
+QToolBox QScrollArea {{
+    border: none;
+    background: {WHITE};
+}}
+"""
+
 # ===================== 工厂映射配置 =====================
 FACTORY_MAP = {"江门一厂": "85", "江门二厂": "107", "珠海一厂": "168", "珠海二厂": "228", "大连电子": "84"}
 FACTORY_MAP_NUM = {"JM1": "85", "JM2": "107", "ZH1": "168", "ZH2": "228", "DL": "84"}
@@ -152,13 +198,6 @@ def safe_kill_process(process_name):
             capture_output=True,
             creationflags=0x08000000  # 隐藏cmd黑窗口
         )
-        # for proc in psutil.process_iter(['pid', 'name']):
-        #     try:
-        #         logger.info(f'{proc.info["name"]}')
-        #         if proc.info["name"] and proc.info["name"].lower() == process_name.lower():
-        #             os.system(f"taskkill /f /pid {proc.info['pid']}")
-        #     except:
-        #         continue
     except:
         pass
 
@@ -185,6 +224,49 @@ def load_config():
             pass
     return df, ds, dop
 
+
+# ===================== 统计卡片组件 =====================
+class StatCard(QFrame):
+    """通用统计卡片"""
+    def __init__(self, title, value="0", color=PRIMARY_COLOR, icon="📊", parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(f"""
+            QFrame {{
+                background: {WHITE};
+                border: 1px solid {GRAY_BORDER};
+                border-radius: 10px;
+            }}
+            QFrame:hover {{
+                border-color: {color};
+            }}
+        """)
+        self.setMinimumHeight(110)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(6)
+
+        title_layout = QHBoxLayout()
+        icon_label = QLabel(icon)
+        icon_label.setFont(QFont("微软雅黑", 16))
+        title_layout.addWidget(icon_label)
+
+        title_label = QLabel(title)
+        title_label.setFont(GLOBAL_FONT)
+        title_label.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};")
+        title_layout.addWidget(title_label)
+        title_layout.addStretch()
+        layout.addLayout(title_layout)
+
+        self.value_label = QLabel(str(value))
+        self.value_label.setFont(LARGE_FONT)
+        self.value_label.setStyleSheet(f"color:{color};")
+        self.value_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        layout.addWidget(self.value_label)
+
+    def set_value(self, val):
+        self.value_label.setText(str(val))
+
+
 # ===================== 主界面 =====================
 class FlyPinWindow(QMainWindow):
     def __init__(self, login_user, user_name, soft_name, soft_ver, release_date, developer, copyright_info):
@@ -210,6 +292,11 @@ class FlyPinWindow(QMainWindow):
         self.current_pn = ""
         self.current_status = ""
         self.current_test_point = ''
+
+        # 报表相关
+        self.report_data = []
+        self.report_page = 1
+        self.report_page_size = 20
 
         self.init_database()
         self._get_user_name()
@@ -263,6 +350,7 @@ class FlyPinWindow(QMainWindow):
         except Exception as e:
             logger.error(f"数据库初始化失败：{str(e)}")
 
+    # ==================== 主界面（Toolbox + StackedWidget 布局）====================
     def init_ui(self):
         now = datetime.now().strftime("%Y-%m-%d")
         self.setWindowTitle(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {now}  当前用户:{self.USER_NAME}")
@@ -270,17 +358,58 @@ class FlyPinWindow(QMainWindow):
         self.setMinimumSize(1400, 600)
         self.setFont(GLOBAL_FONT)
         self.setStyleSheet(GLOBAL_STYLE)
-        # icon_path = os.path.join(os.getcwd(), "logo.png")
-        # if os.path.exists(icon_path):
+
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/logo/image/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.setWindowIcon(icon)
 
         central = QWidget()
         self.setCentralWidget(central)
-        main_layout = QVBoxLayout(central)
-        main_layout.setSpacing(12)
-        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout = QHBoxLayout(central)
+        main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        # ========== 左侧 Toolbox 导航菜单 ==========
+        self.toolbox = QToolBox()
+        self.toolbox.setFixedWidth(180)
+        self.toolbox.setStyleSheet(TOOLBOX_STYLE)
+
+        # ========== 右侧 QStackedWidget 页面容器 ==========
+        self.stacked = QStackedWidget()
+        self.stacked.setStyleSheet(f"QStackedWidget{{background:{GRAY_LIGHT};}}")
+
+        # 任务管理页面（原有全部功能）
+        self.task_page = self.create_task_page()
+        self.stacked.addWidget(self.task_page)
+
+        # 报表管理页面（新增）
+        self.report_page = self.create_report_page()
+        self.stacked.addWidget(self.report_page)
+
+        # Toolbox 添加两个导航项
+        self.toolbox.addItem(QWidget(), "📋  任务管理")
+        self.toolbox.addItem(QWidget(), "📊  报表管理")
+
+        self.toolbox.currentChanged.connect(self.on_toolbox_changed)
+
+        # 组装布局
+        main_layout.addWidget(self.toolbox)
+        main_layout.addWidget(self.stacked)
+
+    def on_toolbox_changed(self, index):
+        """导航菜单切换时同步页面"""
+        self.stacked.setCurrentIndex(index)
+        if index == 1:
+            # 切换到报表页时自动刷新数据
+            self.refresh_report()
+
+    # ==================== 任务管理页面 ====================
+    def create_task_page(self):
+        page = QWidget()
+        page.setStyleSheet(f"background:{GRAY_LIGHT};")
+        layout = QVBoxLayout(page)
+        layout.setSpacing(12)
+        layout.setContentsMargins(12, 12, 12, 12)
 
         # 搜索区域
         search_frame = QFrame()
@@ -355,9 +484,9 @@ class FlyPinWindow(QMainWindow):
                 search_layout.addWidget(label)
             search_layout.addWidget(widget)
         search_layout.addStretch()
-        main_layout.addWidget(search_frame)
+        layout.addWidget(search_frame)
 
-        # 主体布局
+        # 主体布局（表格 + 详情）
         content_layout = QHBoxLayout()
         left_layout = QVBoxLayout()
 
@@ -424,7 +553,7 @@ class FlyPinWindow(QMainWindow):
         left_layout.addWidget(page_frame)
         content_layout.addLayout(left_layout, stretch=70)
 
-        # 右侧详情面板【修复详情布局】
+        # 右侧详情面板
         detail_frame = QFrame()
         detail_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
         detail_frame.setFixedWidth(400)
@@ -432,7 +561,7 @@ class FlyPinWindow(QMainWindow):
         detail_layout.setContentsMargins(0,0,0,0)
         detail_layout.setSpacing(0)
 
-        #标题栏
+        # 标题栏
         title_frame = QFrame()
         title_frame.setStyleSheet(f"QFrame{{background:{PRIMARY_LIGHT};border-top-left-radius:8px;border-top-right-radius:8px;border-bottom:1px solid {GRAY_BORDER};}}")
         title_layout = QHBoxLayout(title_frame)
@@ -444,7 +573,7 @@ class FlyPinWindow(QMainWindow):
         title_layout.addWidget(lab_title)
         detail_layout.addWidget(title_frame)
 
-        #按钮栏
+        # 按钮栏
         btn_frame = QFrame()
         btn_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
         btn_layout = QHBoxLayout(btn_frame)
@@ -469,7 +598,7 @@ class FlyPinWindow(QMainWindow):
         btn_layout.addWidget(self.btn_convert)
         detail_layout.addWidget(btn_frame)
 
-        #滚动详情区
+        # 滚动详情区
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_content = QWidget()
@@ -479,10 +608,8 @@ class FlyPinWindow(QMainWindow):
         self.scroll_layout.setAlignment(Qt.AlignTop)
         self.scroll_area.setWidget(self.scroll_content)
         detail_layout.addWidget(self.scroll_area)
-        content_layout.addWidget(detail_frame, stretch=30)
-        main_layout.addLayout(content_layout)
 
-        # 按钮栏
+        # 上传按钮栏
         upload_frame = QFrame()
         upload_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
         upload_layout = QHBoxLayout(upload_frame)
@@ -494,16 +621,18 @@ class FlyPinWindow(QMainWindow):
         upload_layout.addWidget(self.upload_data)
         detail_layout.addWidget(upload_frame)
 
+        content_layout.addWidget(detail_frame, stretch=30)
+        layout.addLayout(content_layout)
+
         # 底部版权
         info_text = f"""<div style='line-height:1.5;'>
                 <span style='font-size:10pt; font-weight:bold; color:{PRIMARY_COLOR};'>{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION}</span><br/>
                 <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>{self.COPYRIGHT_INFO}</span><br/>
                 <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>开发者：{self.DEVELOPER} | 发布时间：{self.release_date}</span></div>
                 """
-        # bottom_label = QLabel(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {self.DEVELOPER} | {self.COPYRIGHT_INFO}")
         bottom_label = QLabel(info_text)
         bottom_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(bottom_label)
+        layout.addWidget(bottom_label)
 
         # 绑定事件
         self.btn_search.clicked.connect(self.do_search)
@@ -525,6 +654,360 @@ class FlyPinWindow(QMainWindow):
         self.btn_convert.clicked.connect(self.do_convert)
         self.upload_data.clicked.connect(self.do_upload)
 
+        return page
+
+    # ==================== 报表管理页面 ====================
+    def create_report_page(self):
+        page = QWidget()
+        page.setStyleSheet(f"background:{GRAY_LIGHT};")
+        layout = QVBoxLayout(page)
+        layout.setSpacing(12)
+        layout.setContentsMargins(12, 12, 12, 12)
+
+        # 标题栏
+        title_bar = QFrame()
+        title_bar.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
+        title_layout = QHBoxLayout(title_bar)
+        title_layout.setContentsMargins(16, 10, 16, 10)
+        page_title = QLabel("📊 飞针测试数据报表")
+        page_title.setFont(TITLE_FONT)
+        page_title.setStyleSheet(f"color:{PRIMARY_COLOR};")
+        title_layout.addWidget(page_title)
+
+        self.lbl_report_time = QLabel(f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.lbl_report_time.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};")
+        title_layout.addWidget(self.lbl_report_time)
+        title_layout.addStretch()
+
+        self.btn_report_refresh = QPushButton("🔄 刷新报表")
+        self.btn_report_refresh.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_report_refresh.setFixedSize(120, 34)
+        self.btn_report_refresh.clicked.connect(self.refresh_report)
+        title_layout.addWidget(self.btn_report_refresh)
+
+        self.btn_export_report = QPushButton("📥 导出CSV")
+        self.btn_export_report.setStyleSheet(BUTTON_SUCCESS_STYLE)
+        self.btn_export_report.setFixedSize(120, 34)
+        self.btn_export_report.clicked.connect(self.export_report_csv)
+        title_layout.addWidget(self.btn_export_report)
+
+        layout.addWidget(title_bar)
+
+        # 筛选区域
+        filter_frame = QFrame()
+        filter_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
+        filter_layout = QHBoxLayout(filter_frame)
+        filter_layout.setContentsMargins(16, 12, 16, 12)
+        filter_layout.setSpacing(12)
+
+        filter_layout.addWidget(QLabel("工厂："))
+        self.report_cb_factory = QComboBox()
+        self.report_cb_factory.addItems(["全部工厂"] + list(FACTORY_MAP.keys()))
+        self.report_cb_factory.setFixedWidth(120)
+        self.report_cb_factory.setMinimumHeight(34)
+        self.report_cb_factory.setStyleSheet(INPUT_NORMAL_STYLE)
+
+        filter_layout.addWidget(QLabel("状态："))
+        self.report_cb_status = QComboBox()
+        self.report_cb_status.addItems(["全部状态", "未运行", "未输出", "未检查", "未转换", "已转换", "已完成"])
+        self.report_cb_status.setFixedWidth(120)
+        self.report_cb_status.setMinimumHeight(34)
+
+        filter_layout.addWidget(QLabel("日期："))
+        self.report_date_start = QDateEdit()
+        self.report_date_end = QDateEdit()
+        self.report_date_start.setDate(QDate.currentDate().addDays(-30))
+        self.report_date_end.setDate(QDate.currentDate())
+        self.report_date_start.setDisplayFormat("yyyy-MM-dd")
+        self.report_date_end.setDisplayFormat("yyyy-MM-dd")
+        self.report_date_start.setFixedWidth(125)
+        self.report_date_end.setFixedWidth(125)
+        self.report_date_start.setMinimumHeight(34)
+        self.report_date_end.setMinimumHeight(34)
+        self.report_date_start.setCalendarPopup(True)
+        self.report_date_end.setCalendarPopup(True)
+        self.report_date_start.setStyleSheet(INPUT_NORMAL_STYLE)
+        self.report_date_end.setStyleSheet(INPUT_NORMAL_STYLE)
+
+        filter_layout.addWidget(self.report_date_start)
+        filter_layout.addWidget(QLabel("到"))
+        filter_layout.addWidget(self.report_date_end)
+
+        self.btn_report_query = QPushButton("🔍 查询")
+        self.btn_report_query.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_report_query.setFixedSize(100, 34)
+        self.btn_report_query.clicked.connect(self.query_report)
+        filter_layout.addWidget(self.btn_report_query)
+
+        filter_layout.addStretch()
+        layout.addWidget(filter_frame)
+
+        # 统计卡片
+        cards_frame = QFrame()
+        cards_frame.setStyleSheet("QFrame{background:transparent;border:none;}")
+        cards_layout = QHBoxLayout(cards_frame)
+        cards_layout.setSpacing(12)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
+        self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
+        self.card_pending = StatCard("处理中", "0", WARNING_COLOR, "⏳")
+        self.card_not_run = StatCard("未运行", "0", DANGER_COLOR, "⛔")
+        self.card_points_2w = StatCard("2W测试点数", "0", "#8B5CF6", "🔌")
+        self.card_points_4w = StatCard("4W测试点数", "0", "#EC4899", "🔋")
+
+        for card in [self.card_total, self.card_completed, self.card_pending,
+                     self.card_not_run, self.card_points_2w, self.card_points_4w]:
+            cards_layout.addWidget(card)
+
+        layout.addWidget(cards_frame)
+
+        # 报表表格
+        self.report_table = QTableWidget()
+        self.report_table.setFont(GLOBAL_FONT)
+        self.report_headers = ["序号", "厂区", "料号", "版本", "工序", "状态", "创建时间",
+                               "2W点数", "4W点数", "输出人", "检查人", "输出耗时"]
+        self.report_table.setColumnCount(len(self.report_headers))
+        self.report_table.setHorizontalHeaderLabels(self.report_headers)
+
+        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 110, 5: 80,
+                         6: 140, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80}
+        rhh = self.report_table.horizontalHeader()
+        for c, w in rpt_col_width.items():
+            rhh.setSectionResizeMode(c, QHeaderView.Interactive)
+            self.report_table.setColumnWidth(c, w)
+        rhh.setStretchLastSection(True)
+        self.report_table.verticalHeader().setDefaultSectionSize(38)
+        self.report_table.setWordWrap(False)
+        self.report_table.verticalHeader().setVisible(True)
+        self.report_table.setStyleSheet(TABLE_GLOBAL_STYLE)
+        self.report_table.horizontalHeader().setStyleSheet(HEADER_GLOBAL_STYLE)
+        layout.addWidget(self.report_table)
+
+        # 报表分页
+        rpt_page_frame = QFrame()
+        rpt_page_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
+        rpt_page_layout = QHBoxLayout(rpt_page_frame)
+        rpt_page_layout.setContentsMargins(15, 10, 15, 10)
+
+        self.rpt_btn_first = QPushButton("首页")
+        self.rpt_btn_prev = QPushButton("上一页")
+        self.rpt_btn_next = QPushButton("下一页")
+        self.rpt_btn_last = QPushButton("尾页")
+        self.rpt_spin_page = QSpinBox()
+        self.rpt_spin_page.setFixedWidth(65)
+        self.rpt_lab_page = QLabel("总页数：0")
+        self.rpt_lab_count = QLabel("总数据：0 条")
+
+        for btn in [self.rpt_btn_first, self.rpt_btn_prev, self.rpt_btn_next, self.rpt_btn_last]:
+            btn.setFixedSize(75, 30)
+            btn.setStyleSheet(BUTTON_NORMAL_STYLE)
+            btn.setFont(GLOBAL_FONT)
+
+        rpt_page_layout.addStretch()
+        rpt_page_layout.addWidget(self.rpt_btn_first)
+        rpt_page_layout.addWidget(self.rpt_btn_prev)
+        rpt_page_layout.addWidget(self.rpt_btn_next)
+        rpt_page_layout.addWidget(self.rpt_btn_last)
+        rpt_page_layout.addSpacing(15)
+        rpt_page_layout.addWidget(QLabel("页码："))
+        rpt_page_layout.addWidget(self.rpt_spin_page)
+        rpt_page_layout.addSpacing(15)
+        rpt_page_layout.addWidget(self.rpt_lab_page)
+        rpt_page_layout.addSpacing(15)
+        rpt_page_layout.addWidget(self.rpt_lab_count)
+        rpt_page_layout.addStretch()
+        layout.addWidget(rpt_page_frame)
+
+        # 分页事件
+        self.rpt_btn_first.clicked.connect(lambda: self.switch_report_page(1))
+        self.rpt_btn_prev.clicked.connect(lambda: self.switch_report_page(self.report_page - 1))
+        self.rpt_btn_next.clicked.connect(lambda: self.switch_report_page(self.report_page + 1))
+        self.rpt_btn_last.clicked.connect(lambda: self.switch_report_page(self.report_total_page))
+        self.rpt_spin_page.editingFinished.connect(
+            lambda: self.switch_report_page(self.rpt_spin_page.value()))
+
+        return page
+
+    # ==================== 报表逻辑 ====================
+    def refresh_report(self):
+        self.lbl_report_time.setText(f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.load_report_data()
+        self.update_report_cards()
+        self.update_report_table()
+
+    def query_report(self):
+        self.report_page = 1
+        self.refresh_report()
+
+    def load_report_data(self):
+        try:
+            factory_text = self.report_cb_factory.currentText()
+            status_text = self.report_cb_status.currentText()
+            sd = self.report_date_start.date().toString("yyyy-MM-dd")
+            ed = self.report_date_end.date().toString("yyyy-MM-dd")
+
+            where_clauses = [
+                "US.OPERATON_CLASSCODE='ET_DATA'",
+                f"TRUNC(us.CREATION_DATE) BETWEEN TO_DATE('{sd}','YYYY-MM-DD') AND TO_DATE('{ed}','YYYY-MM-DD')"
+            ]
+            if factory_text != "全部工厂":
+                fid = FACTORY_MAP.get(factory_text, "")
+                if fid:
+                    where_clauses.append(f"US.ORG_ID='{fid}'")
+
+            where_sql = " AND ".join(where_clauses)
+
+            sql = f"""SELECT * FROM (
+                SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
+                       us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
+                       us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
+                       us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
+                       us.ATTRIBUTE14,us.ATTRIBUTE15,
+                       A.OPERATION_DESCRIPTION,
+                       ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15)
+                           ORDER BY A.OPERATION_SEQ_NUM DESC) RN
+                FROM inp.inp_flypin_probe_tool_alert us
+                JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID
+                    AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO
+                WHERE {where_sql}
+            ) WHERE RN=1 ORDER BY CREATION_DATE DESC"""
+
+            db = self.init_erp_database_connection()
+            raw = db.SELECT_DIC(sql) if db else []
+
+            if status_text != "全部状态":
+                self.report_data = [
+                    r for r in raw
+                    if self.get_work_status(r.get("ATTRIBUTE16")) == status_text
+                ]
+            else:
+                self.report_data = raw
+
+        except Exception as e:
+            logger.error(f"报表数据加载失败：{e}")
+            self.report_data = []
+
+    def update_report_cards(self):
+        total = len(self.report_data)
+        completed = 0
+        pending = 0
+        not_run = 0
+        total_2w = 0
+        total_4w = 0
+
+        for r in self.report_data:
+            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            if status == "已完成":
+                completed += 1
+            elif status in ["未转换", "未检查"]:
+                pending += 1
+            elif status in ["未运行", "未输出"]:
+                not_run += 1
+
+            try:
+                total_2w += int(r.get("ATTRIBUTE10") or 0)
+                total_4w += int(r.get("ATTRIBUTE11") or 0)
+            except:
+                pass
+
+        self.card_total.set_value(total)
+        self.card_completed.set_value(completed)
+        self.card_pending.set_value(pending)
+        self.card_not_run.set_value(not_run)
+        self.card_points_2w.set_value(f"{total_2w:,}")
+        self.card_points_4w.set_value(f"{total_4w:,}")
+
+    def update_report_table(self):
+        total = len(self.report_data)
+        self.report_total_page = max(1, (total + self.report_page_size - 1) // self.report_page_size)
+        self.report_page = min(self.report_page, self.report_total_page)
+        self.rpt_spin_page.setRange(1, self.report_total_page)
+        self.rpt_spin_page.setValue(self.report_page)
+        self.rpt_lab_page.setText(f"总页数：{self.report_total_page}")
+        self.rpt_lab_count.setText(f"总数据：{total} 条")
+
+        self.report_table.setRowCount(0)
+        s = (self.report_page - 1) * self.report_page_size
+        e = s + self.report_page_size
+        rows = self.report_data[s:e]
+
+        for i, r in enumerate(rows):
+            self.report_table.insertRow(i)
+            bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
+
+            def v(x): return str(x) if x else ""
+
+            org = v(r.get("ORG_ID"))
+            factory = FACTORY_ID_TO_NAME.get(org, org)
+            status = self.get_work_status(r.get("ATTRIBUTE16"))
+
+            row_data = [
+                str((self.report_page - 1) * self.report_page_size + i + 1),
+                factory,
+                v(r.get("ITEM_NO")),
+                v(r.get("REV")),
+                v(r.get("OPERATION_DESCRIPTION")),
+                status,
+                v(r.get("CREATION_DATE")),
+                v(r.get("ATTRIBUTE10")),
+                v(r.get("ATTRIBUTE11")),
+                self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
+                self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
+                v(r.get("ATTRIBUTE9")),
+            ]
+
+            for col, txt in enumerate(row_data):
+                cell = QTableWidgetItem(txt)
+                cell.setTextAlignment(Qt.AlignCenter)
+                cell.setBackground(bg)
+                self.report_table.setItem(i, col, cell)
+
+            st_item = self.report_table.item(i, 5)
+            if st_item:
+                st_item.setForeground(self.get_status_color(status))
+
+    def switch_report_page(self, p):
+        if 1 <= p <= self.report_total_page:
+            self.report_page = p
+            self.rpt_spin_page.setValue(p)
+            self.update_report_table()
+
+    def export_report_csv(self):
+        if not self.report_data:
+            QMessageBox.warning(self, "提示", "暂无数据可导出！")
+            return
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "导出报表CSV", f"飞针测试报表_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            "CSV文件 (*.csv)"
+        )
+        if not file_path:
+            return
+
+        try:
+            import csv
+            with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
+                writer = csv.writer(f)
+                writer.writerow(self.report_headers[1:])
+                for r in self.report_data:
+                    def v(x): return str(x) if x else ""
+                    org = v(r.get("ORG_ID"))
+                    factory = FACTORY_ID_TO_NAME.get(org, org)
+                    status = self.get_work_status(r.get("ATTRIBUTE16"))
+                    writer.writerow([
+                        factory, v(r.get("ITEM_NO")), v(r.get("REV")),
+                        v(r.get("OPERATION_DESCRIPTION")), status, v(r.get("CREATION_DATE")),
+                        v(r.get("ATTRIBUTE10")), v(r.get("ATTRIBUTE11")),
+                        self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
+                        self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
+                        v(r.get("ATTRIBUTE9")),
+                    ])
+            QMessageBox.information(self, "导出成功", f"✅ 报表已导出到：\n{file_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
+
+    # ==================== 原有任务管理方法（保持不变）====================
     def open_file_folder(self):
         """点击按钮打开文件所在文件夹"""
         path = self.current_file_path.strip()
@@ -532,7 +1015,6 @@ class FlyPinWindow(QMainWindow):
             QMessageBox.warning(self, "提示", "文件路径不存在或为空！")
             return
 
-        # 打开文件夹
         if os.path.isdir(path):
             os.startfile(path)
         else:
@@ -556,7 +1038,6 @@ class FlyPinWindow(QMainWindow):
             self.btn_4w_out.setEnabled(False)
             self.btn_input.setEnabled(False)
             self.upload_data.setEnabled(False)
-            # 空白提示
             tip_label = QLabel("请在左侧表格选择一行数据查看详情")
             tip_label.setAlignment(Qt.AlignCenter)
             tip_label.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};font-size:10pt;padding:40px 0;")
@@ -565,7 +1046,6 @@ class FlyPinWindow(QMainWindow):
 
         row_idx = items[0].row()
 
-        # 读取选中行各列
         def get_cell(col):
             it = self.table.item(row_idx, col)
             return it.text().strip() if it else ""
@@ -577,12 +1057,9 @@ class FlyPinWindow(QMainWindow):
         rev = get_cell(3)
         self.current_pn = f"{item_no}{rev}"
         self.current_status = get_cell(6)
-        self.current_file_path = get_cell(9)  # 保存当前路径
+        self.current_file_path = get_cell(9)
         self.current_test_point = get_cell(14)
 
-        # self.upload_data.setEnabled(False)
-
-        # 按钮可用状态
         self.btn_output.setEnabled(True)
         self.btn_check.setEnabled(True)
         self.btn_convert.setEnabled(True)
@@ -608,7 +1085,6 @@ class FlyPinWindow(QMainWindow):
             self.btn_check.setEnabled(False)
             self.upload_data.setEnabled(False)
 
-        # 详情字段配置（标题，列号）
         detail_list = [
             ("输出文件路径", 9),
             ("输出人", 10),
@@ -638,16 +1114,12 @@ class FlyPinWindow(QMainWindow):
             hly.addWidget(lab_name)
             hly.addWidget(val_label)
 
-            # ====================== 核心修改 ======================
-            # 只有【输出文件路径】添加按钮
             if title == "输出文件路径" and val_txt:
                 path_btn = QPushButton("📂")
                 path_btn.setFixedSize(30, 26)
                 path_btn.setStyleSheet(BUTTON_PRIMARY_STYLE)
-                # 绑定点击打开文件夹
                 path_btn.clicked.connect(lambda: self.open_file_folder())
                 hly.addWidget(path_btn)
-            # =======================================================
 
             self.scroll_layout.addWidget(frame)
 
@@ -725,7 +1197,6 @@ class FlyPinWindow(QMainWindow):
         for i, r in enumerate(rows):
             self.table.insertRow(i)
             real_row = start_num + i + 1
-            #原生行号赋值（分页自动累加）
             self.table.setVerticalHeaderItem(i, QTableWidgetItem(str(real_row)))
 
             bg = QColor("#fff") if i%2==0 else QColor("#f8f9fa")
@@ -859,23 +1330,18 @@ class FlyPinWindow(QMainWindow):
         self.show()
 
     def do_input(self):
-        # 替换你原来的那行代码
-        # 创建自定义信息弹窗
         msg_box = QMessageBox()
-        msg_box.setWindowTitle("温馨提示")  # 窗口标题
-        msg_box.setText("请选择导入资料类型")  # 提示内容
-        msg_box.setIcon(QMessageBox.Information)  # 信息图标
+        msg_box.setWindowTitle("温馨提示")
+        msg_box.setText("请选择导入资料类型")
+        msg_box.setIcon(QMessageBox.Information)
 
-        # 添加自定义按钮（文字：2W、4W，自动带关闭按钮）
         btn_2w = msg_box.addButton("2W", QMessageBox.AcceptRole)
         btn_4w = msg_box.addButton("4W", QMessageBox.RejectRole)
         btn_close = msg_box.addButton("关闭", QMessageBox.RejectRole)
 
-        # 显示弹窗并获取点击的按钮
         d = msg_box.exec_()
 
         input_mode = '2w'
-        # 判断用户点击了哪个按钮
         if msg_box.clickedButton() == btn_2w:
             input_mode = '2w'
         elif msg_box.clickedButton() == btn_4w:
@@ -1036,7 +1502,6 @@ class FlyPinWindow(QMainWindow):
             )
         """
         logger.info(f"""查询Cux_Mi_Checkmt没数据，则插入数据:\n{sql}""")
-        # return
         db = self.init_erp_database_connection()
         if not db: return
         dt = db.SQL_EXECUTE(sql)
@@ -1047,12 +1512,10 @@ class FlyPinWindow(QMainWindow):
         上传ERP - 自定义弹窗表单
         """
 
-        # 1. 基础校验
         if not self.current_pn or not self.current_org_id:
             QMessageBox.warning(self, "提示", "请先选择一条有效数据！")
             return
 
-        # ============== 创建弹窗 ==============
         dialog = QDialog(self)
         dialog.setWindowTitle("ERP 上传表单")
         dialog.setFixedSize(450, 380)
@@ -1062,54 +1525,42 @@ class FlyPinWindow(QMainWindow):
         layout.setSpacing(12)
         layout.setContentsMargins(20, 20, 20, 20)
 
-        # ---------------- 字段定义 ----------------
-        # 1. CHECK TYPE
         self.cb_check_type = QComboBox()
         self.cb_check_type.addItems(["飞针", "通用"])
         self.cb_check_type.setCurrentText("飞针")
         self.cb_check_type.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 2. CHECK STATUS
         self.cb_check_status = QComboBox()
         self.cb_check_status.addItems(["OK", "待装"])
         self.cb_check_status.setCurrentText("OK")
         self.cb_check_status.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 3. CREATED_BY 创建人
         self.edit_created_by = QLineEdit()
         self.edit_created_by.setText(self.user_name_id.get(self.USER_NAME.strip()))
         self.edit_created_by.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 3. 备注 手填
         self.edit_remark = QLineEdit()
         self.edit_remark.setText('')
         self.edit_remark.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 5. CREATION_DATE 创建时间
         now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.lbl_create_date = QLabel(now_time)
 
-        # 6. LAST_UPDATED_BY 更新人
         self.edit_last_updated_by = QLineEdit()
         self.edit_last_updated_by.setText(self.user_name_id.get(self.USER_NAME.strip()))
         self.edit_last_updated_by.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 7. LAST_UPDATE_DATE 更新时间
         self.lbl_update_date = QLabel(now_time)
 
-        # 8. ATTRIBUTE1 测试点数
         self.edit_attribute1 = QLineEdit()
         self.edit_attribute1.setText(self.current_test_point.strip())
         self.edit_attribute1.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        # 9. JG_MB 架构/面板检查
         self.lbl_jg_mb = QLabel("Y")
 
-        # 料号显示（只读）
         layout.addRow("<b>当前料号：</b>", QLabel(f"<b>{self.current_pn}</b>"))
         layout.addRow("──────────────────────────", QLabel(""))
 
-        # 表单布局
         layout.addRow("CHECK TYPE（检查类型）：", self.cb_check_type)
         layout.addRow("CHECK_STATUS（检查状态）：", self.cb_check_status)
         layout.addRow("CHECK_MEMO 备注：", self.edit_remark)
@@ -1120,7 +1571,6 @@ class FlyPinWindow(QMainWindow):
         layout.addRow("ATTRIBUTE1（测试点数）：", self.edit_attribute1)
         layout.addRow("JG_MB（架构/面板检查）：", self.lbl_jg_mb)
 
-        # 按钮
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
             Qt.Horizontal, dialog
@@ -1129,11 +1579,9 @@ class FlyPinWindow(QMainWindow):
         buttons.rejected.connect(dialog.reject)
         layout.addRow(buttons)
 
-        # ============== 打开弹窗，等待确认 ==============
         if not dialog.exec_():
-            return  # 取消
+            return
 
-        # ============== 获取表单值 ==============
         check_type = self.cb_check_type.currentText().strip()
         check_status = self.cb_check_status.currentText().strip()
         remark = self.edit_remark.text().strip()
@@ -1144,29 +1592,22 @@ class FlyPinWindow(QMainWindow):
         attribute1 = self.edit_attribute1.text().strip()
         jg_mb = self.lbl_jg_mb.text().strip()
 
-        # 非空校验
         if not created_by or not last_updated_by or not attribute1:
             QMessageBox.warning(self, "校验失败", "创建人、更新人、测试点数不能为空！")
             return
 
-        # ============== 执行上传逻辑 ==============
         try:
             db = self.init_erp_database_connection()
             if not db:
                 QMessageBox.critical(self, "错误", "数据库连接失败！")
                 return
 
-            # 你原来的 ERP 逻辑（保留）
             rep = self._get_erp_report()
-            # print(rep)
-            # return
             if not rep:
                 QMessageBox.warning(self, "上传失败", f"未查询到 {self.current_pn} 对应ERP基础数据！")
-                # return
             else:
                 t = self._get_basic_table(rep['ORGANIZATION_ID'], rep['INVENTORY_ITEM_ID'], rep['ITEM_REV'])
                 if t:
-                    # print(check_status,'*********'.strip())
                     if t['CHECK_STATUS'] is None or t['CHECK_STATUS'].strip() == '':
                         self._update_basic_table(
                             check_type,
@@ -1191,7 +1632,6 @@ class FlyPinWindow(QMainWindow):
                         )
                     else:
                         QMessageBox.information(self, "上传失败", f"{self.current_pn}:Cux_Mi_Checkmt,治具状态不是空,不更新。如需更新请登入ERP手动更新")
-                    # return
                 else:
                     s = self._insert_basic_table(
                         rep['ORGANIZATION_ID'],
@@ -1215,8 +1655,6 @@ class FlyPinWindow(QMainWindow):
                     )
 
                     if s:
-                        # 执行插入/更新（你可以把上面表单字段拼进 SQL）
-                        # 这里只做成功提示
                         QMessageBox.information(
                             self, "上传成功",
                             f"✅ 上传完成！\n\n"
@@ -1243,13 +1681,12 @@ class FlyPinWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "上传异常", f"错误：{str(e)}")
 
-
     def closeEvent(self, e):
         self.refresh_timer.stop()
         e.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    win = FlyPinWindow("","Admin","飞针测试资料管理系统","V2.0","2026-01-01","rphe","SUNTAK SOFTWARE GROUP © All Rights Reserved")
+    win = FlyPinWindow("","Admin","飞针测试资料管理系统","V2.1","2026-01-01","rphe","SUNTAK SOFTWARE GROUP © All Rights Reserved")
     win.show()
     sys.exit(app.exec_())
