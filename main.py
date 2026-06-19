@@ -188,6 +188,27 @@ QLabel {{
 }}
 """
 
+# ===================== 报表子标签样式 =====================
+REPORT_TAB_BTN = f"""
+QPushButton {{
+    background: {WHITE};
+    color: {GRAY_TEXT_NORMAL};
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 微软雅黑;
+    font-size: 10pt;
+    font-weight: bold;
+    padding: 10px 24px;
+}}
+QPushButton:hover {{
+    color: {PRIMARY_COLOR};
+}}
+QPushButton:checked {{
+    color: {PRIMARY_COLOR};
+    border-bottom: 2px solid {PRIMARY_COLOR};
+}}
+"""
+
 # ===================== 工厂映射配置 =====================
 FACTORY_MAP = {"江门一厂": "85", "江门二厂": "107", "珠海一厂": "168", "珠海二厂": "228", "大连电子": "84"}
 FACTORY_MAP_NUM = {"JM1": "85", "JM2": "107", "ZH1": "168", "ZH2": "228", "DL": "84"}
@@ -709,7 +730,7 @@ class FlyPinWindow(QMainWindow):
         layout.setSpacing(12)
         layout.setContentsMargins(12, 12, 12, 12)
 
-        # 标题栏
+        # ---- 标题栏 ----
         title_bar = QFrame()
         title_bar.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
         title_layout = QHBoxLayout(title_bar)
@@ -730,15 +751,14 @@ class FlyPinWindow(QMainWindow):
         self.btn_report_refresh.clicked.connect(self.refresh_report)
         title_layout.addWidget(self.btn_report_refresh)
 
-        self.btn_export_report = QPushButton("📥 导出CSV")
-        self.btn_export_report.setStyleSheet(BUTTON_SUCCESS_STYLE)
-        self.btn_export_report.setFixedSize(120, 34)
-        self.btn_export_report.clicked.connect(self.export_report_csv)
-        title_layout.addWidget(self.btn_export_report)
-
+        self.btn_export_all = QPushButton("📥 导出CSV")
+        self.btn_export_all.setStyleSheet(BUTTON_SUCCESS_STYLE)
+        self.btn_export_all.setFixedSize(120, 34)
+        self.btn_export_all.clicked.connect(self.export_report_csv)
+        title_layout.addWidget(self.btn_export_all)
         layout.addWidget(title_bar)
 
-        # 筛选区域
+        # ---- 筛选区域 ----
         filter_frame = QFrame()
         filter_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
         filter_layout = QHBoxLayout(filter_frame)
@@ -787,7 +807,7 @@ class FlyPinWindow(QMainWindow):
         filter_layout.addStretch()
         layout.addWidget(filter_frame)
 
-        # 统计卡片
+        # ---- 统计卡片（8个）----
         cards_frame = QFrame()
         cards_frame.setStyleSheet("QFrame{background:transparent;border:none;}")
         cards_layout = QHBoxLayout(cards_frame)
@@ -798,38 +818,127 @@ class FlyPinWindow(QMainWindow):
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
         self.card_pending = StatCard("处理中", "0", WARNING_COLOR, "⏳")
         self.card_not_run = StatCard("未运行", "0", DANGER_COLOR, "⛔")
-        self.card_points_2w = StatCard("2W测试点数", "0", "#8B5CF6", "🔌")
-        self.card_points_4w = StatCard("4W测试点数", "0", "#EC4899", "🔋")
+        self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
+        self.card_avg_time = StatCard("平均耗时", "0 min", "#EC4899", "⏱️")
+        self.card_points_2w = StatCard("2W点数", "0", "#06B6D4", "🔌")
+        self.card_points_4w = StatCard("4W点数", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_completed, self.card_pending,
-                     self.card_not_run, self.card_points_2w, self.card_points_4w]:
+                     self.card_not_run, self.card_completion_rate, self.card_avg_time,
+                     self.card_points_2w, self.card_points_4w]:
             cards_layout.addWidget(card)
 
         layout.addWidget(cards_frame)
 
-        # 报表表格
-        self.report_table = QTableWidget()
-        self.report_table.setFont(GLOBAL_FONT)
+        # ---- 子视图切换 Tab Bar ----
+        tab_bar = QFrame()
+        tab_bar.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px 8px 0 0;border:1px solid {GRAY_BORDER};border-bottom:none;}}")
+        tab_layout = QHBoxLayout(tab_bar)
+        tab_layout.setContentsMargins(8, 4, 8, 0)
+        tab_layout.setSpacing(2)
+
+        self.btn_tab_detail = QPushButton("📋 数据明细")
+        self.btn_tab_factory = QPushButton("🏭 工厂汇总")
+        self.btn_tab_daily = QPushButton("📅 日报统计")
+
+        self.btn_tab_detail.setCheckable(True)
+        self.btn_tab_factory.setCheckable(True)
+        self.btn_tab_daily.setCheckable(True)
+        self.btn_tab_detail.setChecked(True)
+
+        self.btn_tab_detail.setFixedHeight(36)
+        self.btn_tab_factory.setFixedHeight(36)
+        self.btn_tab_daily.setFixedHeight(36)
+
+        self.btn_tab_detail.setStyleSheet(REPORT_TAB_BTN)
+        self.btn_tab_factory.setStyleSheet(REPORT_TAB_BTN)
+        self.btn_tab_daily.setStyleSheet(REPORT_TAB_BTN)
+
+        self.report_tab_btns = [self.btn_tab_detail, self.btn_tab_factory, self.btn_tab_daily]
+        for i, btn in enumerate(self.report_tab_btns):
+            btn.clicked.connect(lambda checked, idx=i: self.switch_report_view(idx))
+
+        tab_layout.addWidget(self.btn_tab_detail)
+        tab_layout.addWidget(self.btn_tab_factory)
+        tab_layout.addWidget(self.btn_tab_daily)
+        tab_layout.addStretch()
+        layout.addWidget(tab_bar)
+
+        # ---- 三个子视图 ----
+        self.report_view_stack = QStackedWidget()
+        self.report_view_stack.setStyleSheet(
+            f"QStackedWidget{{background:{WHITE};border:1px solid {GRAY_BORDER};border-radius:0 0 8px 8px;border-top:none;}}")
+
+        # 视图1：数据明细
+        detail_view = QWidget()
+        detail_layout = QVBoxLayout(detail_view)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        self.report_detail_table = QTableWidget()
+        self.report_detail_table.setFont(GLOBAL_FONT)
         self.report_headers = ["序号", "厂区", "料号", "版本", "工序", "状态", "创建时间",
                                "2W点数", "4W点数", "输出人", "检查人", "输出耗时"]
-        self.report_table.setColumnCount(len(self.report_headers))
-        self.report_table.setHorizontalHeaderLabels(self.report_headers)
-
-        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 110, 5: 80,
-                         6: 140, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80}
-        rhh = self.report_table.horizontalHeader()
+        self.report_detail_table.setColumnCount(len(self.report_headers))
+        self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
+        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 110, 5: 80, 6: 140, 7: 80, 8: 80, 9: 80, 10: 80, 11: 80}
         for c, w in rpt_col_width.items():
-            rhh.setSectionResizeMode(c, QHeaderView.Interactive)
-            self.report_table.setColumnWidth(c, w)
-        rhh.setStretchLastSection(True)
-        self.report_table.verticalHeader().setDefaultSectionSize(38)
-        self.report_table.setWordWrap(False)
-        self.report_table.verticalHeader().setVisible(True)
-        self.report_table.setStyleSheet(TABLE_GLOBAL_STYLE)
-        self.report_table.horizontalHeader().setStyleSheet(HEADER_GLOBAL_STYLE)
-        layout.addWidget(self.report_table)
+            self.report_detail_table.setColumnWidth(c, w)
+        self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
+        self.report_detail_table.setWordWrap(False)
+        self.report_detail_table.verticalHeader().setVisible(True)
+        self.report_detail_table.setStyleSheet(TABLE_GLOBAL_STYLE)
+        self.report_detail_table.horizontalHeader().setStyleSheet(HEADER_GLOBAL_STYLE)
+        detail_layout.addWidget(self.report_detail_table)
+        self.report_view_stack.addWidget(detail_view)
 
-        # 报表分页
+        # 视图2：工厂汇总
+        factory_view = QWidget()
+        factory_layout = QVBoxLayout(factory_view)
+        factory_layout.setContentsMargins(0, 0, 0, 0)
+        self.report_factory_table = QTableWidget()
+        self.report_factory_table.setFont(GLOBAL_FONT)
+        self.factory_headers = ["厂区", "总记录", "已完成", "处理中", "未运行", "已转换",
+                                "完成率", "2W点数", "4W点数", "平均耗时(min)", "输出人TOP3"]
+        self.report_factory_table.setColumnCount(len(self.factory_headers))
+        self.report_factory_table.setHorizontalHeaderLabels(self.factory_headers)
+        fac_col_w = {0: 110, 1: 80, 2: 80, 3: 80, 4: 80, 5: 80, 6: 80, 7: 100, 8: 100, 9: 120, 10: 200}
+        fhh = self.report_factory_table.horizontalHeader()
+        for c, w in fac_col_w.items():
+            self.report_factory_table.setColumnWidth(c, w)
+        fhh.setStretchLastSection(True)
+        self.report_factory_table.verticalHeader().setDefaultSectionSize(42)
+        self.report_factory_table.setWordWrap(True)
+        self.report_factory_table.verticalHeader().setVisible(True)
+        self.report_factory_table.setStyleSheet(TABLE_GLOBAL_STYLE)
+        self.report_factory_table.horizontalHeader().setStyleSheet(HEADER_GLOBAL_STYLE)
+        factory_layout.addWidget(self.report_factory_table)
+        self.report_view_stack.addWidget(factory_view)
+
+        # 视图3：日报统计
+        daily_view = QWidget()
+        daily_layout = QVBoxLayout(daily_view)
+        daily_layout.setContentsMargins(0, 0, 0, 0)
+        self.report_daily_table = QTableWidget()
+        self.report_daily_table.setFont(GLOBAL_FONT)
+        self.daily_headers = ["日期", "记录数", "已完成", "处理中", "未运行", "完成率",
+                              "2W点数", "4W点数", "输出用户数"]
+        self.report_daily_table.setColumnCount(len(self.daily_headers))
+        self.report_daily_table.setHorizontalHeaderLabels(self.daily_headers)
+        day_col_w = {0: 140, 1: 80, 2: 80, 3: 80, 4: 80, 5: 80, 6: 120, 7: 120, 8: 100}
+        dhh = self.report_daily_table.horizontalHeader()
+        for c, w in day_col_w.items():
+            self.report_daily_table.setColumnWidth(c, w)
+        dhh.setStretchLastSection(True)
+        self.report_daily_table.verticalHeader().setDefaultSectionSize(38)
+        self.report_daily_table.setWordWrap(False)
+        self.report_daily_table.verticalHeader().setVisible(True)
+        self.report_daily_table.setStyleSheet(TABLE_GLOBAL_STYLE)
+        self.report_daily_table.horizontalHeader().setStyleSheet(HEADER_GLOBAL_STYLE)
+        daily_layout.addWidget(self.report_daily_table)
+        self.report_view_stack.addWidget(daily_view)
+
+        layout.addWidget(self.report_view_stack)
+
+        # ---- 分页 ----
         rpt_page_frame = QFrame()
         rpt_page_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
         rpt_page_layout = QHBoxLayout(rpt_page_frame)
@@ -872,6 +981,7 @@ class FlyPinWindow(QMainWindow):
         self.rpt_spin_page.editingFinished.connect(
             lambda: self.switch_report_page(self.rpt_spin_page.value()))
 
+        self.report_view_index = 0
         return page
 
     # ==================== 报表逻辑 ====================
@@ -879,11 +989,20 @@ class FlyPinWindow(QMainWindow):
         self.lbl_report_time.setText(f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self.load_report_data()
         self.update_report_cards()
-        self.update_report_table()
+        self.report_page = 1
+        self.current_report_view()
 
     def query_report(self):
         self.report_page = 1
         self.refresh_report()
+
+    def switch_report_view(self, index):
+        for i, btn in enumerate(self.report_tab_btns):
+            btn.setChecked(i == index)
+        self.report_view_index = index
+        self.report_view_stack.setCurrentIndex(index)
+        self.report_page = 1
+        self.current_report_view()
 
     def load_report_data(self):
         try:
@@ -933,6 +1052,26 @@ class FlyPinWindow(QMainWindow):
             logger.error(f"报表数据加载失败：{e}")
             self.report_data = []
 
+    def _parse_output_time(self, val):
+        """解析输出耗时 HH:MM:SS → 分钟"""
+        try:
+            s = str(val).strip()
+            if not s or s == '0':
+                return 0
+            parts = s.split(':')
+            if len(parts) == 3:
+                return int(parts[0]) * 60 + int(parts[1]) + int(parts[2]) / 60.0
+            return float(s)
+        except:
+            return 0
+
+    def _top_users(self, counter, max_n=3):
+        """从Counter提取TOP N用户"""
+        if not counter:
+            return ""
+        items = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:max_n]
+        return ", ".join([f"{k}({v})" for k, v in items])
+
     def update_report_cards(self):
         total = len(self.report_data)
         completed = 0
@@ -940,6 +1079,8 @@ class FlyPinWindow(QMainWindow):
         not_run = 0
         total_2w = 0
         total_4w = 0
+        total_time = 0
+        time_count = 0
 
         for r in self.report_data:
             status = self.get_work_status(r.get("ATTRIBUTE16"))
@@ -956,14 +1097,34 @@ class FlyPinWindow(QMainWindow):
             except:
                 pass
 
+            t = self._parse_output_time(r.get("ATTRIBUTE9"))
+            if t > 0:
+                total_time += t
+                time_count += 1
+
+        rate = f"{completed * 100 // total}%" if total > 0 else "0%"
+        avg_t = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
+
         self.card_total.set_value(total)
         self.card_completed.set_value(completed)
         self.card_pending.set_value(pending)
         self.card_not_run.set_value(not_run)
+        self.card_completion_rate.set_value(rate)
+        self.card_avg_time.set_value(f"{avg_t} min")
         self.card_points_2w.set_value(f"{total_2w:,}")
         self.card_points_4w.set_value(f"{total_4w:,}")
 
-    def update_report_table(self):
+    def current_report_view(self):
+        """根据当前视图索引更新对应的表格"""
+        if self.report_view_index == 0:
+            self.update_detail_table()
+        elif self.report_view_index == 1:
+            self.update_factory_summary()
+        elif self.report_view_index == 2:
+            self.update_daily_stats()
+
+    def update_detail_table(self):
+        """数据明细视图"""
         total = len(self.report_data)
         self.report_total_page = max(1, (total + self.report_page_size - 1) // self.report_page_size)
         self.report_page = min(self.report_page, self.report_total_page)
@@ -972,13 +1133,13 @@ class FlyPinWindow(QMainWindow):
         self.rpt_lab_page.setText(f"总页数：{self.report_total_page}")
         self.rpt_lab_count.setText(f"总数据：{total} 条")
 
-        self.report_table.setRowCount(0)
+        self.report_detail_table.setRowCount(0)
         s = (self.report_page - 1) * self.report_page_size
         e = s + self.report_page_size
         rows = self.report_data[s:e]
 
         for i, r in enumerate(rows):
-            self.report_table.insertRow(i)
+            self.report_detail_table.insertRow(i)
             bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
 
             def v(x): return str(x) if x else ""
@@ -1006,52 +1167,244 @@ class FlyPinWindow(QMainWindow):
                 cell = QTableWidgetItem(txt)
                 cell.setTextAlignment(Qt.AlignCenter)
                 cell.setBackground(bg)
-                self.report_table.setItem(i, col, cell)
+                self.report_detail_table.setItem(i, col, cell)
 
-            st_item = self.report_table.item(i, 5)
+            st_item = self.report_detail_table.item(i, 5)
             if st_item:
                 st_item.setForeground(self.get_status_color(status))
+
+    def update_factory_summary(self):
+        """工厂汇总视图"""
+        from collections import Counter
+        factory_map = {}
+        for r in self.report_data:
+            def v(x): return str(x) if x else ""
+            org = v(r.get("ORG_ID"))
+            factory = FACTORY_ID_TO_NAME.get(org, org)
+            if factory not in factory_map:
+                factory_map[factory] = {
+                    "total": 0, "completed": 0, "pending": 0, "not_run": 0, "converted": 0,
+                    "2w": 0, "4w": 0, "times": [], "operators": Counter()
+                }
+            fm = factory_map[factory]
+            fm["total"] += 1
+            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            if status == "已完成":
+                fm["completed"] += 1
+            elif status in ["未转换", "未检查"]:
+                fm["pending"] += 1
+            elif status in ["未运行", "未输出"]:
+                fm["not_run"] += 1
+            if status == "已转换":
+                fm["converted"] += 1
+            try:
+                fm["2w"] += int(r.get("ATTRIBUTE10") or 0)
+                fm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+            except:
+                pass
+            t_out = self._parse_output_time(r.get("ATTRIBUTE9"))
+            if t_out > 0:
+                fm["times"].append(t_out)
+            op = self.user_name.get(v(r.get("ATTRIBUTE6")), "")
+            if op:
+                fm["operators"][op] += 1
+
+        self.report_factory_table.setRowCount(0)
+        sorted_factories = sorted(factory_map.keys())
+
+        for i, fac in enumerate(sorted_factories):
+            fm = factory_map[fac]
+            self.report_factory_table.insertRow(i)
+            bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
+            rate = f"{fm['completed'] * 100 // fm['total']}%" if fm['total'] > 0 else "0%"
+            avg_t = f"{(sum(fm['times']) / len(fm['times'])):.1f}" if fm['times'] else "-"
+            top_ops = self._top_users(fm['operators'])
+
+            row_data = [
+                fac, str(fm['total']), str(fm['completed']), str(fm['pending']),
+                str(fm['not_run']), str(fm['converted']), rate,
+                f"{fm['2w']:,}", f"{fm['4w']:,}", avg_t, top_ops
+            ]
+            for col, txt in enumerate(row_data):
+                cell = QTableWidgetItem(txt)
+                cell.setTextAlignment(Qt.AlignCenter)
+                cell.setBackground(bg)
+                self.report_factory_table.setItem(i, col, cell)
+
+            rate_item = self.report_factory_table.item(i, 6)
+            if rate_item:
+                try:
+                    pct = int(rate.replace('%', ''))
+                    if pct >= 80:
+                        rate_item.setForeground(QColor(SUCCESS_COLOR))
+                    elif pct >= 50:
+                        rate_item.setForeground(QColor(WARNING_COLOR))
+                    else:
+                        rate_item.setForeground(QColor(DANGER_COLOR))
+                except:
+                    pass
+
+        self.rpt_lab_page.setText("工厂汇总")
+        self.rpt_lab_count.setText(f"共 {len(sorted_factories)} 个厂区")
+        self.rpt_spin_page.setRange(1, 1)
+
+    def update_daily_stats(self):
+        """日报统计视图"""
+        daily_map = {}
+        for r in self.report_data:
+            def v(x): return str(x) if x else ""
+            ct = v(r.get("CREATION_DATE"))
+            date_str = ct[:10] if ct else "未知"
+            if date_str not in daily_map:
+                daily_map[date_str] = {
+                    "total": 0, "completed": 0, "pending": 0, "not_run": 0,
+                    "2w": 0, "4w": 0, "users": set()
+                }
+            dm = daily_map[date_str]
+            dm["total"] += 1
+            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            if status == "已完成":
+                dm["completed"] += 1
+            elif status in ["未转换", "未检查"]:
+                dm["pending"] += 1
+            elif status in ["未运行", "未输出"]:
+                dm["not_run"] += 1
+            try:
+                dm["2w"] += int(r.get("ATTRIBUTE10") or 0)
+                dm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+            except:
+                pass
+            op = v(r.get("ATTRIBUTE6"))
+            if op:
+                dm["users"].add(op)
+
+        self.report_daily_table.setRowCount(0)
+        sorted_dates = sorted(daily_map.keys(), reverse=True)
+
+        for i, dt in enumerate(sorted_dates):
+            dm = daily_map[dt]
+            self.report_daily_table.insertRow(i)
+            bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
+            rate = f"{dm['completed'] * 100 // dm['total']}%" if dm['total'] > 0 else "0%"
+
+            row_data = [
+                dt, str(dm['total']), str(dm['completed']),
+                str(dm['pending']), str(dm['not_run']),
+                rate, f"{dm['2w']:,}", f"{dm['4w']:,}",
+                str(len(dm['users']))
+            ]
+            for col, txt in enumerate(row_data):
+                cell = QTableWidgetItem(txt)
+                cell.setTextAlignment(Qt.AlignCenter)
+                cell.setBackground(bg)
+                self.report_daily_table.setItem(i, col, cell)
+
+            rate_item = self.report_daily_table.item(i, 5)
+            if rate_item:
+                try:
+                    pct = int(rate.replace('%', ''))
+                    if pct >= 80:
+                        rate_item.setForeground(QColor(SUCCESS_COLOR))
+                    elif pct >= 50:
+                        rate_item.setForeground(QColor(WARNING_COLOR))
+                    else:
+                        rate_item.setForeground(QColor(DANGER_COLOR))
+                except:
+                    pass
+
+        self.rpt_lab_page.setText("日报统计")
+        self.rpt_lab_count.setText(f"共 {len(sorted_dates)} 天")
 
     def switch_report_page(self, p):
         if 1 <= p <= self.report_total_page:
             self.report_page = p
             self.rpt_spin_page.setValue(p)
-            self.update_report_table()
+            self.current_report_view()
 
     def export_report_csv(self):
+        """导出当前视图数据为CSV"""
         if not self.report_data:
             QMessageBox.warning(self, "提示", "暂无数据可导出！")
             return
 
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "导出报表CSV", f"飞针测试报表_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-            "CSV文件 (*.csv)"
-        )
-        if not file_path:
-            return
-
-        try:
-            import csv
-            with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
-                writer = csv.writer(f)
-                writer.writerow(self.report_headers[1:])
-                for r in self.report_data:
+        if self.report_view_index == 0:
+            pre = "飞针测试数据明细"
+            headers = self.report_headers[1:]
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "导出明细CSV", f"{pre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "CSV文件 (*.csv)"
+            )
+            if not file_path:
+                return
+            try:
+                import csv
+                with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(headers)
                     def v(x): return str(x) if x else ""
-                    org = v(r.get("ORG_ID"))
-                    factory = FACTORY_ID_TO_NAME.get(org, org)
-                    status = self.get_work_status(r.get("ATTRIBUTE16"))
-                    writer.writerow([
-                        factory, v(r.get("ITEM_NO")), v(r.get("REV")),
-                        v(r.get("OPERATION_DESCRIPTION")), status, v(r.get("CREATION_DATE")),
-                        v(r.get("ATTRIBUTE10")), v(r.get("ATTRIBUTE11")),
-                        self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
-                        self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
-                        v(r.get("ATTRIBUTE9")),
-                    ])
-            QMessageBox.information(self, "导出成功", f"✅ 报表已导出到：\n{file_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
+                    for r in self.report_data:
+                        org = v(r.get("ORG_ID"))
+                        factory = FACTORY_ID_TO_NAME.get(org, org)
+                        status = self.get_work_status(r.get("ATTRIBUTE16"))
+                        writer.writerow([
+                            factory, v(r.get("ITEM_NO")), v(r.get("REV")),
+                            v(r.get("OPERATION_DESCRIPTION")), status, v(r.get("CREATION_DATE")),
+                            v(r.get("ATTRIBUTE10")), v(r.get("ATTRIBUTE11")),
+                            self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
+                            self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
+                            v(r.get("ATTRIBUTE9")),
+                        ])
+                QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
 
+        elif self.report_view_index == 1:
+            pre = "飞针测试工厂汇总"
+            headers = self.factory_headers
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "导出工厂汇总CSV", f"{pre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "CSV文件 (*.csv)"
+            )
+            if not file_path:
+                return
+            try:
+                import csv
+                with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(headers)
+                    for row in range(self.report_factory_table.rowCount()):
+                        row_data = []
+                        for col in range(self.report_factory_table.columnCount()):
+                            it = self.report_factory_table.item(row, col)
+                            row_data.append(it.text() if it else "")
+                        writer.writerow(row_data)
+                QMessageBox.information(self, "导出成功", f"✅ 工厂汇总已导出到：\n{file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
+
+        elif self.report_view_index == 2:
+            pre = "飞针测试日报统计"
+            headers = self.daily_headers
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "导出日报CSV", f"{pre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                "CSV文件 (*.csv)"
+            )
+            if not file_path:
+                return
+            try:
+                import csv
+                with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(headers)
+                    for row in range(self.report_daily_table.rowCount()):
+                        row_data = []
+                        for col in range(self.report_daily_table.columnCount()):
+                            it = self.report_daily_table.item(row, col)
+                            row_data.append(it.text() if it else "")
+                        writer.writerow(row_data)
+                QMessageBox.information(self, "导出成功", f"✅ 日报统计已导出到：\n{file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
     # ==================== 原有任务管理方法（保持不变）====================
     def open_file_folder(self):
         """点击按钮打开文件所在文件夹"""
