@@ -1842,11 +1842,8 @@ class FlyPinWindow(QMainWindow):
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
-        self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "both")
-        self.showNormal()
-        self.activateWindow()
         QMessageBox.information(self,"结果","输出成功" if ok else "输出失败")
         self.update_single_row(self.current_did)
 
@@ -1854,11 +1851,8 @@ class FlyPinWindow(QMainWindow):
         if self.current_status != "未检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
-        self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "both")
-        self.showNormal()
-        self.activateWindow()
         QMessageBox.information(self,"结果","检查成功" if ok else "检查失败")
         self.update_single_row(self.current_did)
 
@@ -1881,27 +1875,19 @@ class FlyPinWindow(QMainWindow):
             input_mode = '4w'
         elif msg_box.clickedButton() == btn_close:
             return
-        self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "input", input_mode)
-        self.showNormal()
-        self.activateWindow()
         self.update_single_row(self.current_did)
 
     def do_convert(self):
         # if self.current_status != "未转换":
         #     QMessageBox.warning(self,"提示","状态不允许转换")
         #     return
-        self.showMinimized()
         try:
             subprocess.Popen([r"D:\Tpg-e\TPG-E.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE).wait()
         except:
-            self.showNormal()
-            self.activateWindow()
             QMessageBox.critical(self,"错误","未找到转换程序")
             return
-        self.showNormal()
-        self.activateWindow()
         QMessageBox.information(self,"成功","转换完成")
         db = self.init_erp_database_connection()
         if db:
@@ -1912,11 +1898,8 @@ class FlyPinWindow(QMainWindow):
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
-        self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "4w_out", "4w")
-        self.showNormal()
-        self.activateWindow()
         QMessageBox.information(self,"结果","4W输出成功" if ok else "4W输出失败")
         self.update_single_row(self.current_did)
 
