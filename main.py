@@ -755,18 +755,6 @@ class FlyPinWindow(QMainWindow):
         self.lbl_report_time.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};")
         title_layout.addWidget(self.lbl_report_time)
         title_layout.addStretch()
-
-        self.btn_report_refresh = QPushButton("🔄 刷新报表")
-        self.btn_report_refresh.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_report_refresh.setFixedSize(120, 34)
-        self.btn_report_refresh.clicked.connect(self.refresh_report)
-        title_layout.addWidget(self.btn_report_refresh)
-
-        self.btn_export_all = QPushButton("📥 导出CSV")
-        self.btn_export_all.setStyleSheet(BUTTON_SUCCESS_STYLE)
-        self.btn_export_all.setFixedSize(120, 34)
-        self.btn_export_all.clicked.connect(self.export_report_csv)
-        title_layout.addWidget(self.btn_export_all)
         layout.addWidget(title_bar)
 
         # ---- 筛选区域（两行）----
@@ -815,14 +803,29 @@ class FlyPinWindow(QMainWindow):
         self.report_date_start.setStyleSheet(INPUT_NORMAL_STYLE)
         self.report_date_end.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        row1.addWidget(QLabel("日期：")); row1.addWidget(self.report_date_start)
-        row1.addWidget(QLabel("到")); row1.addWidget(self.report_date_end)
+        row1.addWidget(QLabel("日期："));
+        row1.addWidget(self.report_date_start)
+        row1.addWidget(QLabel("到"));
+        row1.addWidget(self.report_date_end)
 
         self.btn_report_query = QPushButton("🔍 查询")
         self.btn_report_query.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_report_query.setFixedSize(100, 34)
+        self.btn_report_query.setFixedSize(80, 34)
         self.btn_report_query.clicked.connect(self.query_report)
         row1.addWidget(self.btn_report_query)
+
+        self.btn_report_refresh = QPushButton("🔄 刷新报表")
+        self.btn_report_refresh.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_report_refresh.setFixedSize(80, 34)
+        self.btn_report_refresh.clicked.connect(self.refresh_report)
+        row1.addWidget(self.btn_report_refresh)
+
+        self.btn_export_all = QPushButton("📥 导出CSV")
+        self.btn_export_all.setStyleSheet(BUTTON_SUCCESS_STYLE)
+        self.btn_export_all.setFixedSize(80, 34)
+        self.btn_export_all.clicked.connect(self.export_report_csv)
+        row1.addWidget(self.btn_export_all)
+
         row1.addStretch()
         filter_outer.addLayout(row1)
 
@@ -838,11 +841,11 @@ class FlyPinWindow(QMainWindow):
         self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
         self.card_pending = StatCard("处理中", "0", WARNING_COLOR, "⏳")
-        self.card_not_run = StatCard("未运行", "0", DANGER_COLOR, "⛔")
+        self.card_not_run = StatCard("未执行", "0", DANGER_COLOR, "⛔")
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
         self.card_avg_time = StatCard("平均耗时", "0 min", "#EC4899", "⏱️")
-        self.card_points_2w = StatCard("2W点数", "0", "#06B6D4", "🔌")
-        self.card_points_4w = StatCard("4W点数", "0", "#F59E0B", "🔋")
+        self.card_points_2w = StatCard("2W总点数", "0", "#06B6D4", "🔌")
+        self.card_points_4w = StatCard("4W总点数", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_completed, self.card_pending,
                      self.card_not_run, self.card_completion_rate, self.card_avg_time,
