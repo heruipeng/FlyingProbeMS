@@ -437,13 +437,23 @@ class FlyPinWindow(QMainWindow):
         sidebar_layout.addWidget(self.btn_nav_report)
         sidebar_layout.addStretch()
 
+        # # 底部版权
+        # footer_label = QLabel(f"<div style='text-align:center;line-height:1.4;'>"
+        #                       f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>{self.SOFTWARE_NAME}</span><br>"
+        #                       f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>V{self.SOFTWARE_VERSION}</span></div>")
+        # footer_label.setFixedHeight(50)
+        # footer_label.setAlignment(Qt.AlignCenter)
+        # sidebar_layout.addWidget(footer_label)
+
         # 底部版权
-        footer_label = QLabel(f"<div style='text-align:center;line-height:1.4;'>"
-                              f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>{self.SOFTWARE_NAME}</span><br>"
-                              f"<span style='font-size:8pt;color:{GRAY_TEXT_LIGHT};'>V{self.SOFTWARE_VERSION}</span></div>")
-        footer_label.setFixedHeight(50)
-        footer_label.setAlignment(Qt.AlignCenter)
-        sidebar_layout.addWidget(footer_label)
+        info_text = f"""<div style='line-height:1.5;'>
+                        <span style='font-size:10pt; font-weight:bold; color:{PRIMARY_COLOR};'>{self.SOFTWARE_NAME}{self.SOFTWARE_VERSION}</span><br/>
+                        <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>开发者：{self.DEVELOPER} <br/>发布时间：{self.release_date}</span><br/>
+                        <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>{self.COPYRIGHT_INFO}</span></div>
+                        """
+        bottom_label = QLabel(info_text)
+        bottom_label.setAlignment(Qt.AlignCenter)
+        sidebar_layout.addWidget(bottom_label)
 
         # ========== 右侧 QStackedWidget 页面容器 ==========
         self.stacked = QStackedWidget()
@@ -690,15 +700,15 @@ class FlyPinWindow(QMainWindow):
         content_layout.addWidget(detail_frame, stretch=30)
         layout.addLayout(content_layout)
 
-        # 底部版权
-        info_text = f"""<div style='line-height:1.5;'>
-                <span style='font-size:10pt; font-weight:bold; color:{PRIMARY_COLOR};'>{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION}</span><br/>
-                <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>{self.COPYRIGHT_INFO}</span><br/>
-                <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>开发者：{self.DEVELOPER} | 发布时间：{self.release_date}</span></div>
-                """
-        bottom_label = QLabel(info_text)
-        bottom_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(bottom_label)
+        # # 底部版权
+        # info_text = f"""<div style='line-height:1.5;'>
+        #         <span style='font-size:10pt; font-weight:bold; color:{PRIMARY_COLOR};'>{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION}</span><br/>
+        #         <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>{self.COPYRIGHT_INFO}</span><br/>
+        #         <span style='font-size:9pt; color:{GRAY_TEXT_LIGHT};'>开发者：{self.DEVELOPER} | 发布时间：{self.release_date}</span></div>
+        #         """
+        # bottom_label = QLabel(info_text)
+        # bottom_label.setAlignment(Qt.AlignCenter)
+        # layout.addWidget(bottom_label)
 
         # 绑定事件
         self.btn_search.clicked.connect(self.do_search)

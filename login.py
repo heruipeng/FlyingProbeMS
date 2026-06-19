@@ -73,11 +73,12 @@ def load_user():
         return "", ""
 
 # ===================== 全局版本版权（统一入口） =====================
-SOFTWARE_NAME = "崇达飞针测试管理系统"
-SOFTWARE_VERSION = "V3.6 正式版"
-release_date = "2026-06-18"
+SOFTWARE_NAME = "飞针测试管理系统"
+SOFTWARE_VERSION = "V4.0"
+release_date = "2026-06-19"
 DEVELOPER = "何瑞鹏"
-COPYRIGHT_INFO = "Copyright © SUNTAK 2026 All Rights Reserved."
+# COPYRIGHT_INFO = "Copyright © SUNTAK 2026 All Rights Reserved."
+COPYRIGHT_INFO = "SUNTAK@2026 版权所有"
 
 # 全局样式配色
 PRIMARY_COLOR = "#409EFF"
