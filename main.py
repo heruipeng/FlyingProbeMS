@@ -22,6 +22,7 @@ from datetime import datetime
 
 import psutil
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                             QAbstractItemView,
                              QTableWidget, QTableWidgetItem, QPushButton, QLineEdit,
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
@@ -901,6 +902,7 @@ class FlyPinWindow(QMainWindow):
         detail_layout.setContentsMargins(0, 0, 0, 0)
         self.report_detail_table = QTableWidget()
         self.report_detail_table.setFont(GLOBAL_FONT)
+        self.report_detail_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
                                "2W点数", "4W点数", "输出人", "输出完成",
                                "输出耗时", "检查人", "检查完成", "检查耗时"]
@@ -924,6 +926,7 @@ class FlyPinWindow(QMainWindow):
         factory_layout.setContentsMargins(0, 0, 0, 0)
         self.report_factory_table = QTableWidget()
         self.report_factory_table.setFont(GLOBAL_FONT)
+        self.report_factory_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.factory_headers = ["厂区", "总记录", "已完成", "处理中", "未运行", "已转换",
                                 "完成率", "2W点数", "4W点数", "平均耗时(min)", "输出人TOP3"]
         self.report_factory_table.setColumnCount(len(self.factory_headers))
@@ -947,6 +950,7 @@ class FlyPinWindow(QMainWindow):
         daily_layout.setContentsMargins(0, 0, 0, 0)
         self.report_daily_table = QTableWidget()
         self.report_daily_table.setFont(GLOBAL_FONT)
+        self.report_daily_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.daily_headers = ["日期", "记录数", "已完成", "处理中", "未运行", "完成率",
                               "2W点数", "4W点数", "输出用户数"]
         self.report_daily_table.setColumnCount(len(self.daily_headers))
