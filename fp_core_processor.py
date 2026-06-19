@@ -968,13 +968,25 @@ class FlyingProbeCoreProcessor:
         self.gen.COM('clear_layers')
         self.gen.COM('affected_layer,name=,mode=all,affected=no')
         self.gen.COM('filter_reset,filter_name=popup')
+        out = 'outline'
+        self.delete_layers(out)
+        self.gen.COM(f'profile_to_rout,layer={out},width=40,create_sr=no')
+
         info = self.gen.DO_INFO(f'-t matrix -e {self.internal_job}/matrix -d ROW -m script')
         for n in range(len(info['gROWname'])):
             name = info['gROWname'][n]
-            self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
-            self.gen.COM('clip_area_strt')
-            self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
-            self.gen.COM(f'affected_layer,name={name},mode=single,affected=no')
+            ctx = info['gROWcontext'][n]
+            typ = info['gROWlayer_type'][n]
+            side = info['gROWside'][n]
+            if ctx == 'board':
+                self.gen.COM(f'affected_layer,name={name},mode=single,affected=yes')
+                # self.gen.COM('clip_area_strt')
+                # self.gen.COM('clip_area_end,layers_mode=affected_layers,layer=,area=profile,area_type=,inout=outside,contour_cut=no,margin=-2,feat_types=line\;pad\;surface\;arc\;text,ref_layer=')
+                self.gen.COM(f'sel_ref_feat,layers={out},use=filter,mode=cover,f_types=line\;pad\;arc\;text\;surface,polarity=positive\;negative,include_syms=,exclude_syms=,pads_as=shape,tolerance=0,negative_union=yes')
+                self.gen.COM('get_select_count')
+                if int(self.gen.COMANS) > 0:
+                    self.gen.COM('sel_delete')
+                self.gen.COM(f'affected_layer,name={name},mode=single,affected=no')
         # self.gen.COM('affected_layer,name=,mode=all,affected=no')
         logger.info(f"【{self.raw_job}】完成清理板外物件、外形线")
 
