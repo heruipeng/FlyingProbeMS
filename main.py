@@ -1067,25 +1067,26 @@ class FlyPinWindow(QMainWindow):
             else:
                 self.report_data = raw
 
+            # 先刷新下拉列表（基于状态筛选后的数据）
+            self._refresh_user_combos()
+
             # 输出人筛选
             output_user = self.report_cb_output_user.currentText()
             if output_user != "全部输出人":
-                output_id = self.user_name_id.get(output_user, "")
-                if output_id:
-                    self.report_data = [
-                        r for r in self.report_data
-                        if str(r.get("ATTRIBUTE6") or "") == output_id
-                    ]
+                output_id = self.user_name_id.get(output_user, output_user)
+                self.report_data = [
+                    r for r in self.report_data
+                    if str(r.get("ATTRIBUTE6") or "") == output_id
+                ]
 
             # 检查人筛选
             check_user = self.report_cb_check_user.currentText()
             if check_user != "全部检查人":
-                check_id = self.user_name_id.get(check_user, "")
-                if check_id:
-                    self.report_data = [
-                        r for r in self.report_data
-                        if str(r.get("ATTRIBUTE12") or "") == check_id
-                    ]
+                check_id = self.user_name_id.get(check_user, check_user)
+                self.report_data = [
+                    r for r in self.report_data
+                    if str(r.get("ATTRIBUTE12") or "") == check_id
+                ]
 
         except Exception as e:
             logger.error(f"报表数据加载失败：{e}")
@@ -1110,6 +1111,42 @@ class FlyPinWindow(QMainWindow):
             return ""
         items = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:max_n]
         return ", ".join([f"{k}({v})" for k, v in items])
+
+    def _refresh_user_combos(self):
+        """从已加载的报表数据中提取输出人/检查人，动态填充下拉列表"""
+        output_users = set()
+        check_users = set()
+        user_name = self.user_name
+        for r in self.report_data:
+            def _v(x): return str(x) if x else ""
+            ou = _v(r.get("ATTRIBUTE6"))
+            if ou:
+                output_users.add(user_name.get(ou, ou))
+            cu = _v(r.get("ATTRIBUTE12"))
+            if cu:
+                check_users.add(user_name.get(cu, cu))
+
+        # 更新输出人下拉（保留之前的选择）
+        prev_out = self.report_cb_output_user.currentText()
+        self.report_cb_output_user.blockSignals(True)
+        self.report_cb_output_user.clear()
+        self.report_cb_output_user.addItem("全部输出人")
+        self.report_cb_output_user.addItems(sorted(output_users))
+        idx = self.report_cb_output_user.findText(prev_out)
+        if idx >= 0:
+            self.report_cb_output_user.setCurrentIndex(idx)
+        self.report_cb_output_user.blockSignals(False)
+
+        # 更新检查人下拉
+        prev_chk = self.report_cb_check_user.currentText()
+        self.report_cb_check_user.blockSignals(True)
+        self.report_cb_check_user.clear()
+        self.report_cb_check_user.addItem("全部检查人")
+        self.report_cb_check_user.addItems(sorted(check_users))
+        idx = self.report_cb_check_user.findText(prev_chk)
+        if idx >= 0:
+            self.report_cb_check_user.setCurrentIndex(idx)
+        self.report_cb_check_user.blockSignals(False)
 
     # ---------- 缓存机制：一次计算，三视图复用 ----------
 
