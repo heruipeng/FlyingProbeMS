@@ -1046,6 +1046,15 @@ class FlyPinWindow(QMainWindow):
                 WHERE {where_sql}
             ) WHERE RN=1 ORDER BY CREATION_DATE DESC"""
 
+            sql = f"""
+                            SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
+                                   us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
+                                   us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
+                                   us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
+                                   us.ATTRIBUTE14,us.ATTRIBUTE15
+                            FROM inp.inp_flypin_probe_tool_alert us
+                            WHERE {where_sql}"""
+
             db = self.init_erp_database_connection()
             raw = db.SELECT_DIC(sql) if db else []
 
