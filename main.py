@@ -876,12 +876,12 @@ class FlyPinWindow(QMainWindow):
         self.report_detail_table = QTableWidget()
         self.report_detail_table.setFont(GLOBAL_FONT)
         self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
-                               "2W点数", "4W点数", "输出人", "输出开始", "输出完成",
-                               "输出耗时", "检查人", "检查开始", "检查完成", "检查耗时"]
+                               "2W点数", "4W点数", "输出人", "输出完成",
+                               "输出耗时", "检查人", "检查完成", "检查耗时"]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
         rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 120, 6: 180, 7: 70, 8: 70,
-                         9: 75, 10: 120, 11: 120, 12: 75, 13: 75, 14: 120, 15: 120, 16: 75}
+                         9: 75, 10: 120, 11: 75, 12: 75, 13: 120, 14: 75}
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
@@ -1247,11 +1247,9 @@ class FlyPinWindow(QMainWindow):
                 str(r.get("ATTRIBUTE10") or ""),
                 str(r.get("ATTRIBUTE11") or ""),
                 user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                str(r.get("ATTRIBUTE7") or ""),
                 str(r.get("ATTRIBUTE8") or ""),
                 str(r.get("ATTRIBUTE9") or ""),
                 user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                str(r.get("ATTRIBUTE13") or ""),
                 str(r.get("ATTRIBUTE14") or ""),
                 str(r.get("ATTRIBUTE15") or ""),
             ]
@@ -1397,10 +1395,10 @@ class FlyPinWindow(QMainWindow):
                             str(r.get("REMARK") or ""),
                             str(r.get("ATTRIBUTE10") or ""), str(r.get("ATTRIBUTE11") or ""),
                             self.user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                            str(r.get("ATTRIBUTE7") or ""), str(r.get("ATTRIBUTE8") or ""),
+                            str(r.get("ATTRIBUTE8") or ""),
                             str(r.get("ATTRIBUTE9") or ""),
                             self.user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                            str(r.get("ATTRIBUTE13") or ""), str(r.get("ATTRIBUTE14") or ""),
+                            str(r.get("ATTRIBUTE14") or ""),
                             str(r.get("ATTRIBUTE15") or ""),
                         ])
                 QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
