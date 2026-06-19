@@ -31,7 +31,7 @@ from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
 import icon_rc
-from datetime import datetime
+from collections import Counter
 
 # 导入Oracle数据库模块
 import package.Oracle_DB as Oracle_DB
@@ -986,25 +986,34 @@ class FlyPinWindow(QMainWindow):
 
     # ==================== 报表逻辑 ====================
     def refresh_report(self):
+        """刷新报表（重新查DB+全部重算）"""
         self.lbl_report_time.setText(f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self.load_report_data()
         self.update_report_cards()
+        self._precompute_report_cache()
         self.report_page = 1
+        self.report_view_stack.setUpdatesEnabled(False)
         self.current_report_view()
+        self.report_view_stack.setUpdatesEnabled(True)
 
     def query_report(self):
+        """筛选条件变化，重新加载"""
         self.report_page = 1
         self.refresh_report()
 
     def switch_report_view(self, index):
+        """切换子视图（纯UI切换，不重新计算）"""
         for i, btn in enumerate(self.report_tab_btns):
             btn.setChecked(i == index)
         self.report_view_index = index
         self.report_view_stack.setCurrentIndex(index)
         self.report_page = 1
+        self.report_view_stack.setUpdatesEnabled(False)
         self.current_report_view()
+        self.report_view_stack.setUpdatesEnabled(True)
 
     def load_report_data(self):
+        """从DB加载数据"""
         try:
             factory_text = self.report_cb_factory.currentText()
             status_text = self.report_cb_status.currentText()
@@ -1053,7 +1062,7 @@ class FlyPinWindow(QMainWindow):
             self.report_data = []
 
     def _parse_output_time(self, val):
-        """解析输出耗时 HH:MM:SS → 分钟"""
+        """解析输出耗时 HH:MM:SS -> 分钟"""
         try:
             s = str(val).strip()
             if not s or s == '0':
@@ -1072,7 +1081,83 @@ class FlyPinWindow(QMainWindow):
         items = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:max_n]
         return ", ".join([f"{k}({v})" for k, v in items])
 
+    # ---------- 缓存机制：一次计算，三视图复用 ----------
+
+    def _precompute_report_cache(self):
+        """数据加载后一次性预计算工厂汇总+日报统计"""
+        cache = {
+            'factory_summary': {},
+            'daily_stats': {}
+        }
+
+        user_name = self.user_name
+        get_status = self.get_work_status
+
+        # 工厂汇总
+        for r in self.report_data:
+            def _v(x): return str(x) if x else ""
+            org = _v(r.get("ORG_ID"))
+            factory = FACTORY_ID_TO_NAME.get(org, org)
+            if factory not in cache['factory_summary']:
+                cache['factory_summary'][factory] = {
+                    "total": 0, "completed": 0, "pending": 0, "not_run": 0, "converted": 0,
+                    "2w": 0, "4w": 0, "times": [], "operators": Counter()
+                }
+            fm = cache['factory_summary'][factory]
+            fm["total"] += 1
+            status = get_status(r.get("ATTRIBUTE16"))
+            if status == "已完成":
+                fm["completed"] += 1
+            elif status in ("未转换", "未检查"):
+                fm["pending"] += 1
+            elif status in ("未运行", "未输出"):
+                fm["not_run"] += 1
+            if status == "已转换":
+                fm["converted"] += 1
+            try:
+                fm["2w"] += int(r.get("ATTRIBUTE10") or 0)
+                fm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+            except:
+                pass
+            t_out = self._parse_output_time(r.get("ATTRIBUTE9"))
+            if t_out > 0:
+                fm["times"].append(t_out)
+            op = user_name.get(_v(r.get("ATTRIBUTE6")), "")
+            if op:
+                fm["operators"][op] += 1
+
+        # 日报统计
+        for r in self.report_data:
+            def _v(x): return str(x) if x else ""
+            ct = _v(r.get("CREATION_DATE"))
+            date_str = ct[:10] if ct else "未知"
+            if date_str not in cache['daily_stats']:
+                cache['daily_stats'][date_str] = {
+                    "total": 0, "completed": 0, "pending": 0, "not_run": 0,
+                    "2w": 0, "4w": 0, "users": set()
+                }
+            dm = cache['daily_stats'][date_str]
+            dm["total"] += 1
+            status = get_status(r.get("ATTRIBUTE16"))
+            if status == "已完成":
+                dm["completed"] += 1
+            elif status in ("未转换", "未检查"):
+                dm["pending"] += 1
+            elif status in ("未运行", "未输出"):
+                dm["not_run"] += 1
+            try:
+                dm["2w"] += int(r.get("ATTRIBUTE10") or 0)
+                dm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+            except:
+                pass
+            op = _v(r.get("ATTRIBUTE6"))
+            if op:
+                dm["users"].add(op)
+
+        self._report_cache = cache
+
     def update_report_cards(self):
+        """更新统计卡片"""
         total = len(self.report_data)
         completed = 0
         pending = 0
@@ -1081,22 +1166,21 @@ class FlyPinWindow(QMainWindow):
         total_4w = 0
         total_time = 0
         time_count = 0
+        get_status = self.get_work_status
 
         for r in self.report_data:
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("ATTRIBUTE16"))
             if status == "已完成":
                 completed += 1
-            elif status in ["未转换", "未检查"]:
+            elif status in ("未转换", "未检查"):
                 pending += 1
-            elif status in ["未运行", "未输出"]:
+            elif status in ("未运行", "未输出"):
                 not_run += 1
-
             try:
                 total_2w += int(r.get("ATTRIBUTE10") or 0)
                 total_4w += int(r.get("ATTRIBUTE11") or 0)
             except:
                 pass
-
             t = self._parse_output_time(r.get("ATTRIBUTE9"))
             if t > 0:
                 total_time += t
@@ -1115,16 +1199,16 @@ class FlyPinWindow(QMainWindow):
         self.card_points_4w.set_value(f"{total_4w:,}")
 
     def current_report_view(self):
-        """根据当前视图索引更新对应的表格"""
+        """根据当前视图索引渲染表格（从缓存读取）"""
         if self.report_view_index == 0:
-            self.update_detail_table()
+            self._render_detail_table()
         elif self.report_view_index == 1:
-            self.update_factory_summary()
+            self._render_factory_summary()
         elif self.report_view_index == 2:
-            self.update_daily_stats()
+            self._render_daily_stats()
 
-    def update_detail_table(self):
-        """数据明细视图"""
+    def _render_detail_table(self):
+        """数据明细 - 从原始数据分页渲染"""
         total = len(self.report_data)
         self.report_total_page = max(1, (total + self.report_page_size - 1) // self.report_page_size)
         self.report_page = min(self.report_page, self.report_total_page)
@@ -1133,88 +1217,63 @@ class FlyPinWindow(QMainWindow):
         self.rpt_lab_page.setText(f"总页数：{self.report_total_page}")
         self.rpt_lab_count.setText(f"总数据：{total} 条")
 
-        self.report_detail_table.setRowCount(0)
+        table = self.report_detail_table
+        table.setRowCount(0)
         s = (self.report_page - 1) * self.report_page_size
         e = s + self.report_page_size
         rows = self.report_data[s:e]
 
+        user_name = self.user_name
+        get_status = self.get_work_status
+        status_color = self.get_status_color
+
         for i, r in enumerate(rows):
-            self.report_detail_table.insertRow(i)
+            table.insertRow(i)
             bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
 
-            def v(x): return str(x) if x else ""
-
-            org = v(r.get("ORG_ID"))
+            org = str(r.get("ORG_ID") or "")
             factory = FACTORY_ID_TO_NAME.get(org, org)
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("ATTRIBUTE16"))
 
-            row_data = [
-                str((self.report_page - 1) * self.report_page_size + i + 1),
+            items_data = [
+                str(s + i + 1),
                 factory,
-                v(r.get("ITEM_NO")),
-                v(r.get("REV")),
-                v(r.get("OPERATION_DESCRIPTION")),
+                str(r.get("ITEM_NO") or ""),
+                str(r.get("REV") or ""),
+                str(r.get("OPERATION_DESCRIPTION") or ""),
                 status,
-                v(r.get("CREATION_DATE")),
-                v(r.get("ATTRIBUTE10")),
-                v(r.get("ATTRIBUTE11")),
-                self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
-                self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
-                v(r.get("ATTRIBUTE9")),
+                str(r.get("CREATION_DATE") or ""),
+                str(r.get("ATTRIBUTE10") or ""),
+                str(r.get("ATTRIBUTE11") or ""),
+                user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
+                user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
+                str(r.get("ATTRIBUTE9") or ""),
             ]
 
-            for col, txt in enumerate(row_data):
+            for col, txt in enumerate(items_data):
                 cell = QTableWidgetItem(txt)
                 cell.setTextAlignment(Qt.AlignCenter)
                 cell.setBackground(bg)
-                self.report_detail_table.setItem(i, col, cell)
+                table.setItem(i, col, cell)
 
-            st_item = self.report_detail_table.item(i, 5)
+            st_item = table.item(i, 5)
             if st_item:
-                st_item.setForeground(self.get_status_color(status))
+                st_item.setForeground(status_color(status))
 
-    def update_factory_summary(self):
-        """工厂汇总视图"""
-        from collections import Counter
-        factory_map = {}
-        for r in self.report_data:
-            def v(x): return str(x) if x else ""
-            org = v(r.get("ORG_ID"))
-            factory = FACTORY_ID_TO_NAME.get(org, org)
-            if factory not in factory_map:
-                factory_map[factory] = {
-                    "total": 0, "completed": 0, "pending": 0, "not_run": 0, "converted": 0,
-                    "2w": 0, "4w": 0, "times": [], "operators": Counter()
-                }
-            fm = factory_map[factory]
-            fm["total"] += 1
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
-            if status == "已完成":
-                fm["completed"] += 1
-            elif status in ["未转换", "未检查"]:
-                fm["pending"] += 1
-            elif status in ["未运行", "未输出"]:
-                fm["not_run"] += 1
-            if status == "已转换":
-                fm["converted"] += 1
-            try:
-                fm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                fm["4w"] += int(r.get("ATTRIBUTE11") or 0)
-            except:
-                pass
-            t_out = self._parse_output_time(r.get("ATTRIBUTE9"))
-            if t_out > 0:
-                fm["times"].append(t_out)
-            op = self.user_name.get(v(r.get("ATTRIBUTE6")), "")
-            if op:
-                fm["operators"][op] += 1
+    def _render_factory_summary(self):
+        """工厂汇总 - 从缓存渲染"""
+        cache = getattr(self, '_report_cache', {})
+        factory_data = cache.get('factory_summary', {})
+        if not factory_data:
+            return
 
-        self.report_factory_table.setRowCount(0)
-        sorted_factories = sorted(factory_map.keys())
+        table = self.report_factory_table
+        table.setRowCount(0)
+        sorted_factories = sorted(factory_data.keys())
 
         for i, fac in enumerate(sorted_factories):
-            fm = factory_map[fac]
-            self.report_factory_table.insertRow(i)
+            fm = factory_data[fac]
+            table.insertRow(i)
             bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
             rate = f"{fm['completed'] * 100 // fm['total']}%" if fm['total'] > 0 else "0%"
             avg_t = f"{(sum(fm['times']) / len(fm['times'])):.1f}" if fm['times'] else "-"
@@ -1229,9 +1288,9 @@ class FlyPinWindow(QMainWindow):
                 cell = QTableWidgetItem(txt)
                 cell.setTextAlignment(Qt.AlignCenter)
                 cell.setBackground(bg)
-                self.report_factory_table.setItem(i, col, cell)
+                table.setItem(i, col, cell)
 
-            rate_item = self.report_factory_table.item(i, 6)
+            rate_item = table.item(i, 6)
             if rate_item:
                 try:
                     pct = int(rate.replace('%', ''))
@@ -1248,42 +1307,20 @@ class FlyPinWindow(QMainWindow):
         self.rpt_lab_count.setText(f"共 {len(sorted_factories)} 个厂区")
         self.rpt_spin_page.setRange(1, 1)
 
-    def update_daily_stats(self):
-        """日报统计视图"""
-        daily_map = {}
-        for r in self.report_data:
-            def v(x): return str(x) if x else ""
-            ct = v(r.get("CREATION_DATE"))
-            date_str = ct[:10] if ct else "未知"
-            if date_str not in daily_map:
-                daily_map[date_str] = {
-                    "total": 0, "completed": 0, "pending": 0, "not_run": 0,
-                    "2w": 0, "4w": 0, "users": set()
-                }
-            dm = daily_map[date_str]
-            dm["total"] += 1
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
-            if status == "已完成":
-                dm["completed"] += 1
-            elif status in ["未转换", "未检查"]:
-                dm["pending"] += 1
-            elif status in ["未运行", "未输出"]:
-                dm["not_run"] += 1
-            try:
-                dm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                dm["4w"] += int(r.get("ATTRIBUTE11") or 0)
-            except:
-                pass
-            op = v(r.get("ATTRIBUTE6"))
-            if op:
-                dm["users"].add(op)
+    def _render_daily_stats(self):
+        """日报统计 - 从缓存渲染"""
+        cache = getattr(self, '_report_cache', {})
+        daily_data = cache.get('daily_stats', {})
+        if not daily_data:
+            return
 
-        self.report_daily_table.setRowCount(0)
-        sorted_dates = sorted(daily_map.keys(), reverse=True)
+        table = self.report_daily_table
+        table.setRowCount(0)
+        sorted_dates = sorted(daily_data.keys(), reverse=True)
 
         for i, dt in enumerate(sorted_dates):
-            dm = daily_map[dt]
-            self.report_daily_table.insertRow(i)
+            dm = daily_data[dt]
+            table.insertRow(i)
             bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
             rate = f"{dm['completed'] * 100 // dm['total']}%" if dm['total'] > 0 else "0%"
 
@@ -1297,9 +1334,9 @@ class FlyPinWindow(QMainWindow):
                 cell = QTableWidgetItem(txt)
                 cell.setTextAlignment(Qt.AlignCenter)
                 cell.setBackground(bg)
-                self.report_daily_table.setItem(i, col, cell)
+                table.setItem(i, col, cell)
 
-            rate_item = self.report_daily_table.item(i, 5)
+            rate_item = table.item(i, 5)
             if rate_item:
                 try:
                     pct = int(rate.replace('%', ''))
@@ -1316,10 +1353,13 @@ class FlyPinWindow(QMainWindow):
         self.rpt_lab_count.setText(f"共 {len(sorted_dates)} 天")
 
     def switch_report_page(self, p):
+        """分页切换（仅明细表需要）"""
         if 1 <= p <= self.report_total_page:
             self.report_page = p
             self.rpt_spin_page.setValue(p)
+            self.report_view_stack.setUpdatesEnabled(False)
             self.current_report_view()
+            self.report_view_stack.setUpdatesEnabled(True)
 
     def export_report_csv(self):
         """导出当前视图数据为CSV"""
@@ -1341,18 +1381,18 @@ class FlyPinWindow(QMainWindow):
                 with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
                     writer = csv.writer(f)
                     writer.writerow(headers)
-                    def v(x): return str(x) if x else ""
                     for r in self.report_data:
-                        org = v(r.get("ORG_ID"))
+                        org = str(r.get("ORG_ID") or "")
                         factory = FACTORY_ID_TO_NAME.get(org, org)
                         status = self.get_work_status(r.get("ATTRIBUTE16"))
                         writer.writerow([
-                            factory, v(r.get("ITEM_NO")), v(r.get("REV")),
-                            v(r.get("OPERATION_DESCRIPTION")), status, v(r.get("CREATION_DATE")),
-                            v(r.get("ATTRIBUTE10")), v(r.get("ATTRIBUTE11")),
-                            self.user_name.get(v(r.get("ATTRIBUTE6")), ""),
-                            self.user_name.get(v(r.get("ATTRIBUTE12")), ""),
-                            v(r.get("ATTRIBUTE9")),
+                            factory, str(r.get("ITEM_NO") or ""), str(r.get("REV") or ""),
+                            str(r.get("OPERATION_DESCRIPTION") or ""), status,
+                            str(r.get("CREATION_DATE") or ""),
+                            str(r.get("ATTRIBUTE10") or ""), str(r.get("ATTRIBUTE11") or ""),
+                            self.user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
+                            self.user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
+                            str(r.get("ATTRIBUTE9") or ""),
                         ])
                 QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
             except Exception as e:
@@ -1372,10 +1412,11 @@ class FlyPinWindow(QMainWindow):
                 with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
                     writer = csv.writer(f)
                     writer.writerow(headers)
-                    for row in range(self.report_factory_table.rowCount()):
+                    table = self.report_factory_table
+                    for row in range(table.rowCount()):
                         row_data = []
-                        for col in range(self.report_factory_table.columnCount()):
-                            it = self.report_factory_table.item(row, col)
+                        for col in range(table.columnCount()):
+                            it = table.item(row, col)
                             row_data.append(it.text() if it else "")
                         writer.writerow(row_data)
                 QMessageBox.information(self, "导出成功", f"✅ 工厂汇总已导出到：\n{file_path}")
@@ -1396,10 +1437,11 @@ class FlyPinWindow(QMainWindow):
                 with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
                     writer = csv.writer(f)
                     writer.writerow(headers)
-                    for row in range(self.report_daily_table.rowCount()):
+                    table = self.report_daily_table
+                    for row in range(table.rowCount()):
                         row_data = []
-                        for col in range(self.report_daily_table.columnCount()):
-                            it = self.report_daily_table.item(row, col)
+                        for col in range(table.columnCount()):
+                            it = table.item(row, col)
                             row_data.append(it.text() if it else "")
                         writer.writerow(row_data)
                 QMessageBox.information(self, "导出成功", f"✅ 日报统计已导出到：\n{file_path}")
