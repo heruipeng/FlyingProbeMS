@@ -801,12 +801,6 @@ class FlyPinWindow(QMainWindow):
         self.report_cb_check_user.addItems(sorted(self.user_name.values()))
         self.report_cb_check_user.setFixedWidth(110); self.report_cb_check_user.setMinimumHeight(34)
         row1.addWidget(QLabel("检查人：")); row1.addWidget(self.report_cb_check_user)
-        row1.addStretch()
-        filter_outer.addLayout(row1)
-
-        # 第二行：日期 | 查询
-        row2 = QHBoxLayout()
-        row2.setSpacing(10)
 
         self.report_date_start = QDateEdit()
         self.report_date_end = QDateEdit()
@@ -820,16 +814,16 @@ class FlyPinWindow(QMainWindow):
         self.report_date_start.setStyleSheet(INPUT_NORMAL_STYLE)
         self.report_date_end.setStyleSheet(INPUT_NORMAL_STYLE)
 
-        row2.addWidget(QLabel("日期：")); row2.addWidget(self.report_date_start)
-        row2.addWidget(QLabel("到")); row2.addWidget(self.report_date_end)
+        row1.addWidget(QLabel("日期：")); row1.addWidget(self.report_date_start)
+        row1.addWidget(QLabel("到")); row1.addWidget(self.report_date_end)
 
         self.btn_report_query = QPushButton("🔍 查询")
         self.btn_report_query.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_report_query.setFixedSize(100, 34)
         self.btn_report_query.clicked.connect(self.query_report)
-        row2.addWidget(self.btn_report_query)
-        row2.addStretch()
-        filter_outer.addLayout(row2)
+        row1.addWidget(self.btn_report_query)
+        row1.addStretch()
+        filter_outer.addLayout(row1)
 
         layout.addWidget(filter_frame)
 
