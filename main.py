@@ -902,8 +902,8 @@ class FlyPinWindow(QMainWindow):
                                "输出耗时", "检查人", "检查完成", "检查耗时"]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
-        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 120, 6: 180, 7: 70, 8: 70,
-                         9: 75, 10: 120, 11: 75, 12: 75, 13: 120, 14: 75}
+        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 140, 6: 180, 7: 70, 8: 70,
+                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75}
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
