@@ -1842,23 +1842,23 @@ class FlyPinWindow(QMainWindow):
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
-        self.showMinimized()
+        self.setWindowState(Qt.WindowMinimized)
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "both")
         QMessageBox.information(self,"结果","输出成功" if ok else "输出失败")
         self.update_single_row(self.current_did)
-        self.showNormal()
+        self._restore_window()
 
     def do_check(self):
         if self.current_status != "未检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
-        self.showMinimized()
+        self.setWindowState(Qt.WindowMinimized)
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "both")
         QMessageBox.information(self,"结果","检查成功" if ok else "检查失败")
         self.update_single_row(self.current_did)
-        self.showNormal()
+        self._restore_window()
 
     def do_input(self):
         msg_box = QMessageBox()
@@ -1879,40 +1879,46 @@ class FlyPinWindow(QMainWindow):
             input_mode = '4w'
         elif msg_box.clickedButton() == btn_close:
             return
-        self.showMinimized()
+        self.setWindowState(Qt.WindowMinimized)
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "input", input_mode)
         self.update_single_row(self.current_did)
-        self.showNormal()
+        self._restore_window()
 
     def do_convert(self):
         # if self.current_status != "未转换":
         #     QMessageBox.warning(self,"提示","状态不允许转换")
         #     return
-        self.showMinimized()
+        self.setWindowState(Qt.WindowMinimized)
         try:
             subprocess.Popen([r"D:\Tpg-e\TPG-E.exe"], creationflags=subprocess.CREATE_NEW_CONSOLE).wait()
         except:
             QMessageBox.critical(self,"错误","未找到转换程序")
-            self.showNormal()
+            self._restore_window()
             return
         QMessageBox.information(self,"成功","转换完成")
         db = self.init_erp_database_connection()
         if db:
             db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE16='已转换' WHERE DATA_ID='{self.current_did}'")
         self.update_single_row(self.current_did)
-        self.showNormal()
+        self._restore_window()
 
     def do_4w_out(self):
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
-        self.showMinimized()
+        self.setWindowState(Qt.WindowMinimized)
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
         ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "4w_out", "4w")
         QMessageBox.information(self,"结果","4W输出成功" if ok else "4W输出失败")
         self.update_single_row(self.current_did)
-        self.showNormal()
+        self._restore_window()
+
+    def _restore_window(self):
+        """从最小化恢复窗口"""
+        self.setWindowState(Qt.WindowNoState)
+        self.activateWindow()
+        self.raise_()
 
     def _get_erp_report(self):
         sql = f"""
