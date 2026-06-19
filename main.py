@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
                              QDialog, QFormLayout, QDialogButtonBox,
-                             QStackedWidget, QFileDialog, QGridLayout)
+                             QStackedWidget, QFileDialog)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
@@ -758,43 +758,46 @@ class FlyPinWindow(QMainWindow):
         title_layout.addWidget(self.btn_export_all)
         layout.addWidget(title_bar)
 
-        # ---- 筛选区域（两行网格布局）----
+        # ---- 筛选区域（两行）----
         filter_frame = QFrame()
         filter_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
-        filter_layout = QGridLayout(filter_frame)
-        filter_layout.setContentsMargins(16, 10, 16, 10)
-        filter_layout.setSpacing(10)
+        filter_outer = QVBoxLayout(filter_frame)
+        filter_outer.setContentsMargins(16, 8, 16, 8)
+        filter_outer.setSpacing(6)
 
-        # 第一行：工厂 | 状态 | 输出人 | 检查人 | 查询按钮
-        lbl_factory = QLabel("工厂："); filter_layout.addWidget(lbl_factory, 0, 0)
+        # 第一行：工厂 | 状态 | 输出人 | 检查人
+        row1 = QHBoxLayout()
+        row1.setSpacing(10)
+
         self.report_cb_factory = QComboBox()
         self.report_cb_factory.addItems(["全部工厂"] + list(FACTORY_MAP.keys()))
         self.report_cb_factory.setFixedWidth(110); self.report_cb_factory.setMinimumHeight(34)
         self.report_cb_factory.setStyleSheet(INPUT_NORMAL_STYLE)
-        filter_layout.addWidget(self.report_cb_factory, 0, 1)
+        row1.addWidget(QLabel("工厂：")); row1.addWidget(self.report_cb_factory)
 
-        lbl_status = QLabel("状态："); filter_layout.addWidget(lbl_status, 0, 2)
         self.report_cb_status = QComboBox()
         self.report_cb_status.addItems(["全部状态", "未运行", "未输出", "未检查", "未转换", "已转换", "已完成"])
         self.report_cb_status.setFixedWidth(110); self.report_cb_status.setMinimumHeight(34)
-        filter_layout.addWidget(self.report_cb_status, 0, 3)
+        row1.addWidget(QLabel("状态：")); row1.addWidget(self.report_cb_status)
 
-        lbl_out = QLabel("输出人："); filter_layout.addWidget(lbl_out, 0, 4)
         self.report_cb_output_user = QComboBox()
         self.report_cb_output_user.addItem("全部输出人")
         self.report_cb_output_user.addItems(sorted(self.user_name.values()))
         self.report_cb_output_user.setFixedWidth(110); self.report_cb_output_user.setMinimumHeight(34)
-        filter_layout.addWidget(self.report_cb_output_user, 0, 5)
+        row1.addWidget(QLabel("输出人：")); row1.addWidget(self.report_cb_output_user)
 
-        lbl_chk = QLabel("检查人："); filter_layout.addWidget(lbl_chk, 0, 6)
         self.report_cb_check_user = QComboBox()
         self.report_cb_check_user.addItem("全部检查人")
         self.report_cb_check_user.addItems(sorted(self.user_name.values()))
         self.report_cb_check_user.setFixedWidth(110); self.report_cb_check_user.setMinimumHeight(34)
-        filter_layout.addWidget(self.report_cb_check_user, 0, 7)
+        row1.addWidget(QLabel("检查人：")); row1.addWidget(self.report_cb_check_user)
+        row1.addStretch()
+        filter_outer.addLayout(row1)
 
-        # 第二行：日期 | 查询按钮
-        lbl_date = QLabel("日期："); filter_layout.addWidget(lbl_date, 1, 0)
+        # 第二行：日期 | 查询
+        row2 = QHBoxLayout()
+        row2.setSpacing(10)
+
         self.report_date_start = QDateEdit()
         self.report_date_end = QDateEdit()
         self.report_date_start.setDate(QDate.currentDate().addDays(-30))
@@ -806,17 +809,18 @@ class FlyPinWindow(QMainWindow):
         self.report_date_start.setCalendarPopup(True); self.report_date_end.setCalendarPopup(True)
         self.report_date_start.setStyleSheet(INPUT_NORMAL_STYLE)
         self.report_date_end.setStyleSheet(INPUT_NORMAL_STYLE)
-        filter_layout.addWidget(self.report_date_start, 1, 1)
-        filter_layout.addWidget(QLabel("到"), 1, 2)
-        filter_layout.addWidget(self.report_date_end, 1, 3)
+
+        row2.addWidget(QLabel("日期：")); row2.addWidget(self.report_date_start)
+        row2.addWidget(QLabel("到")); row2.addWidget(self.report_date_end)
 
         self.btn_report_query = QPushButton("🔍 查询")
         self.btn_report_query.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_report_query.setFixedSize(100, 34)
         self.btn_report_query.clicked.connect(self.query_report)
-        filter_layout.addWidget(self.btn_report_query, 1, 7)
+        row2.addWidget(self.btn_report_query)
+        row2.addStretch()
+        filter_outer.addLayout(row2)
 
-        filter_layout.setColumnStretch(8, 1)
         layout.addWidget(filter_frame)
 
         # ---- 统计卡片（8个）----
