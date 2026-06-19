@@ -775,8 +775,22 @@ class FlyPinWindow(QMainWindow):
         filter_layout.addWidget(QLabel("状态："))
         self.report_cb_status = QComboBox()
         self.report_cb_status.addItems(["全部状态", "未运行", "未输出", "未检查", "未转换", "已转换", "已完成"])
-        self.report_cb_status.setFixedWidth(120)
+        self.report_cb_status.setFixedWidth(110)
         self.report_cb_status.setMinimumHeight(34)
+
+        filter_layout.addWidget(QLabel("输出人："))
+        self.report_cb_output_user = QComboBox()
+        self.report_cb_output_user.addItem("全部输出人")
+        self.report_cb_output_user.addItems(sorted(self.user_name.values()))
+        self.report_cb_output_user.setFixedWidth(110)
+        self.report_cb_output_user.setMinimumHeight(34)
+
+        filter_layout.addWidget(QLabel("检查人："))
+        self.report_cb_check_user = QComboBox()
+        self.report_cb_check_user.addItem("全部检查人")
+        self.report_cb_check_user.addItems(sorted(self.user_name.values()))
+        self.report_cb_check_user.setFixedWidth(110)
+        self.report_cb_check_user.setMinimumHeight(34)
 
         filter_layout.addWidget(QLabel("日期："))
         self.report_date_start = QDateEdit()
@@ -1052,6 +1066,26 @@ class FlyPinWindow(QMainWindow):
                 ]
             else:
                 self.report_data = raw
+
+            # 输出人筛选
+            output_user = self.report_cb_output_user.currentText()
+            if output_user != "全部输出人":
+                output_id = self.user_name_id.get(output_user, "")
+                if output_id:
+                    self.report_data = [
+                        r for r in self.report_data
+                        if str(r.get("ATTRIBUTE6") or "") == output_id
+                    ]
+
+            # 检查人筛选
+            check_user = self.report_cb_check_user.currentText()
+            if check_user != "全部检查人":
+                check_id = self.user_name_id.get(check_user, "")
+                if check_id:
+                    self.report_data = [
+                        r for r in self.report_data
+                        if str(r.get("ATTRIBUTE12") or "") == check_id
+                    ]
 
         except Exception as e:
             logger.error(f"报表数据加载失败：{e}")
