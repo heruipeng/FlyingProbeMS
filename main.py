@@ -695,12 +695,18 @@ class FlyPinWindow(QMainWindow):
         btn_2w_layout.setSpacing(8)
         self.btn_2w_output = QPushButton("📤 输出")
         self.btn_2w_check = QPushButton("📋 检查")
-        self.btn_2w_output.setFixedSize(75, 34)
-        self.btn_2w_check.setFixedSize(75, 34)
+        self.btn_2w_input = QPushButton("📋 导入")
+        self.btn_2w_convert = QPushButton("🔄 转换")
+        for b in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert]:
+            b.setFixedSize(75, 34)
         self.btn_2w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_2w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_2w_input.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_2w_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
         btn_2w_layout.addWidget(self.btn_2w_output)
         btn_2w_layout.addWidget(self.btn_2w_check)
+        btn_2w_layout.addWidget(self.btn_2w_input)
+        btn_2w_layout.addWidget(self.btn_2w_convert)
         btn_2w_layout.addStretch()
         tab_2w_layout.addWidget(btn_2w_frame)
 
@@ -763,12 +769,18 @@ class FlyPinWindow(QMainWindow):
         btn_4w_layout.setSpacing(8)
         self.btn_4w_output = QPushButton("📦 4W输出")
         self.btn_4w_check = QPushButton("📋 检查")
-        self.btn_4w_output.setFixedSize(85, 34)
-        self.btn_4w_check.setFixedSize(75, 34)
+        self.btn_4w_input = QPushButton("📋 导入")
+        self.btn_4w_convert = QPushButton("🔄 转换")
+        for b in [self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert]:
+            b.setFixedSize(75, 34)
         self.btn_4w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_4w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_4w_input.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_4w_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
         btn_4w_layout.addWidget(self.btn_4w_output)
         btn_4w_layout.addWidget(self.btn_4w_check)
+        btn_4w_layout.addWidget(self.btn_4w_input)
+        btn_4w_layout.addWidget(self.btn_4w_convert)
         btn_4w_layout.addStretch()
         tab_4w_layout.addWidget(btn_4w_frame)
 
@@ -819,28 +831,12 @@ class FlyPinWindow(QMainWindow):
 
         detail_layout.addWidget(self.detail_tabs, stretch=1)
 
-        # 共用按钮栏（导入 / 转换）
-        common_btn_frame = QFrame()
-        common_btn_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
-        common_btn_layout = QHBoxLayout(common_btn_frame)
-        common_btn_layout.setContentsMargins(12, 10, 12, 10)
-        common_btn_layout.setSpacing(12)
-        self.btn_input = QPushButton("📋 导入")
-        self.btn_convert = QPushButton("🔄 转换")
-        self.btn_input.setFixedSize(75, 34)
-        self.btn_convert.setFixedSize(75, 34)
-        self.btn_input.setStyleSheet(BUTTON_WARN_STYLE)
-        self.btn_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
-        common_btn_layout.addStretch()
-        common_btn_layout.addWidget(self.btn_input)
-        common_btn_layout.addWidget(self.btn_convert)
-        common_btn_layout.addStretch()
-        detail_layout.addWidget(common_btn_frame)
-
         # 保持兼容：旧引用指向新控件
         self.btn_output = self.btn_2w_output
         self.btn_4w_out = self.btn_4w_output
         self.btn_check = self.btn_2w_check
+        self.btn_input = self.btn_2w_input
+        self.btn_convert = self.btn_2w_convert
         self.scroll_area = self.scroll_2w
         self.scroll_layout = self.scroll_layout_2w
         self.upload_data = self.btn_2w_upload
@@ -874,10 +870,12 @@ class FlyPinWindow(QMainWindow):
 
         self.btn_2w_output.clicked.connect(self.do_2w_make)
         self.btn_2w_check.clicked.connect(self.do_2w_check)
+        self.btn_2w_input.clicked.connect(self.do_input)
+        self.btn_2w_convert.clicked.connect(self.do_convert)
         self.btn_4w_output.clicked.connect(self.do_4w_out)
         self.btn_4w_check.clicked.connect(self.do_4w_check)
-        self.btn_input.clicked.connect(self.do_input)
-        self.btn_convert.clicked.connect(self.do_convert)
+        self.btn_4w_input.clicked.connect(self.do_input)
+        self.btn_4w_convert.clicked.connect(self.do_convert)
         self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
         self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
         self.btn_2w_open_path.clicked.connect(self.open_file_folder)
@@ -1716,8 +1714,8 @@ class FlyPinWindow(QMainWindow):
 
         items = self.table.selectedItems()
         if not items:
-            for btn in [self.btn_2w_output, self.btn_2w_check, self.btn_4w_output,
-                        self.btn_4w_check, self.btn_input, self.btn_convert,
+            for btn in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert,
+                        self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert,
                         self.btn_2w_upload, self.btn_4w_upload]:
                 btn.setEnabled(False)
             self.lbl_2w_path_val.setText("未选择")
@@ -1754,46 +1752,53 @@ class FlyPinWindow(QMainWindow):
         # ===== 2W 按钮状态 =====
         self.btn_2w_output.setEnabled(True)
         self.btn_2w_check.setEnabled(True)
+        self.btn_2w_input.setEnabled(True)
+        self.btn_2w_convert.setEnabled(True)
         self.btn_2w_upload.setEnabled(True)
         if self.current_status in ["未运行", "未输出"]:
             self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_convert.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
         elif self.current_status == "未检查":
+            self.btn_2w_convert.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
+        elif self.current_status == "未转换":
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
         elif self.current_status == "已完成":
             self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
 
         # ===== 4W 按钮状态 =====
         self.btn_4w_output.setEnabled(True)
         self.btn_4w_check.setEnabled(True)
+        self.btn_4w_input.setEnabled(True)
+        self.btn_4w_convert.setEnabled(True)
         self.btn_4w_upload.setEnabled(True)
         if self.current_status in ["未运行", "未输出"]:
             self.btn_4w_output.setEnabled(False)
             self.btn_4w_check.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
+            self.btn_4w_convert.setEnabled(False)
             self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "未检查":
             self.btn_4w_output.setEnabled(False)
+            self.btn_4w_convert.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
             self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "未转换":
             self.btn_4w_check.setEnabled(True)
+            self.btn_4w_input.setEnabled(False)
             self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "已完成":
             self.btn_4w_output.setEnabled(False)
             self.btn_4w_check.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
             self.btn_4w_upload.setEnabled(False)
-
-        # ===== 共用按钮状态 =====
-        self.btn_input.setEnabled(True)
-        self.btn_convert.setEnabled(True)
-        if self.current_status in ["未运行", "未输出"]:
-            self.btn_input.setEnabled(False)
-            self.btn_convert.setEnabled(False)
-        elif self.current_status == "未检查":
-            self.btn_convert.setEnabled(False)
-            self.btn_input.setEnabled(False)
-        elif self.current_status == "未转换":
-            self.btn_input.setEnabled(False)
 
         # ===== 更新路径标签 =====
         file_path = self.current_file_path
