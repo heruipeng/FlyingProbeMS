@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
                              QDialog, QFormLayout, QDialogButtonBox,
-                             QStackedWidget, QFileDialog)
+                             QStackedWidget, QFileDialog, QTabWidget)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
@@ -317,6 +317,8 @@ class FlyPinWindow(QMainWindow):
         self.current_pn = ""
         self.current_status = ""
         self.current_test_point = ''
+        self.current_2w_test_point = ''
+        self.current_4w_test_point = ''
 
         # 报表相关
         self.report_data = []
@@ -650,53 +652,199 @@ class FlyPinWindow(QMainWindow):
         title_layout.addWidget(lab_title)
         detail_layout.addWidget(title_frame)
 
-        # 按钮栏
-        btn_frame = QFrame()
-        btn_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
-        btn_layout = QHBoxLayout(btn_frame)
-        btn_layout.setContentsMargins(12,10,12,10)
-        btn_layout.setSpacing(12)
-        self.btn_output = QPushButton("📤 输出")
-        self.btn_4w_out = QPushButton("📦 4W输出")
-        self.btn_check = QPushButton("📋 检查")
+        # ===== Tab Widget: 2W资料 / 4W资料 =====
+        self.detail_tabs = QTabWidget()
+        self.detail_tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: none;
+                background: {WHITE};
+            }}
+            QTabBar::tab {{
+                padding: 10px 24px;
+                font-family: 微软雅黑;
+                font-size: 10pt;
+                font-weight: bold;
+                color: {GRAY_TEXT_NORMAL};
+                background: {GRAY_LIGHT};
+                border: 1px solid {GRAY_BORDER};
+                border-bottom: 2px solid {GRAY_BORDER};
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+            }}
+            QTabBar::tab:selected {{
+                color: {PRIMARY_COLOR};
+                background: {WHITE};
+                border-bottom: 2px solid {PRIMARY_COLOR};
+            }}
+            QTabBar::tab:hover {{
+                color: {PRIMARY_COLOR};
+            }}
+        """)
+
+        # ----- 2W资料 Tab -----
+        self.tab_2w = QWidget()
+        tab_2w_layout = QVBoxLayout(self.tab_2w)
+        tab_2w_layout.setContentsMargins(0, 0, 0, 0)
+        tab_2w_layout.setSpacing(0)
+
+        # 2W 按钮栏
+        btn_2w_frame = QFrame()
+        btn_2w_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
+        btn_2w_layout = QHBoxLayout(btn_2w_frame)
+        btn_2w_layout.setContentsMargins(12, 10, 12, 10)
+        btn_2w_layout.setSpacing(8)
+        self.btn_2w_output = QPushButton("📤 输出")
+        self.btn_2w_check = QPushButton("📋 检查")
+        self.btn_2w_output.setFixedSize(75, 34)
+        self.btn_2w_check.setFixedSize(75, 34)
+        self.btn_2w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_2w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        btn_2w_layout.addWidget(self.btn_2w_output)
+        btn_2w_layout.addWidget(self.btn_2w_check)
+        btn_2w_layout.addStretch()
+        tab_2w_layout.addWidget(btn_2w_frame)
+
+        # 2W 输出文件路径
+        path_2w_frame = QFrame()
+        path_2w_frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-bottom:1px solid {GRAY_BORDER};}}")
+        path_2w_layout = QHBoxLayout(path_2w_frame)
+        path_2w_layout.setContentsMargins(12, 8, 12, 8)
+        path_2w_layout.setSpacing(6)
+        lbl_2w_path = QLabel("输出文件路径：")
+        lbl_2w_path.setFont(BOLD_FONT)
+        lbl_2w_path.setStyleSheet(f"color:{GRAY_TEXT_NORMAL};")
+        self.lbl_2w_path_val = QLabel("未选择")
+        self.lbl_2w_path_val.setStyleSheet(f"color:{GRAY_TEXT_DARK};")
+        self.lbl_2w_path_val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_2w_path_val.setWordWrap(True)
+        self.btn_2w_open_path = QPushButton("📂")
+        self.btn_2w_open_path.setFixedSize(30, 26)
+        self.btn_2w_open_path.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        path_2w_layout.addWidget(lbl_2w_path)
+        path_2w_layout.addWidget(self.lbl_2w_path_val, stretch=1)
+        path_2w_layout.addWidget(self.btn_2w_open_path)
+        tab_2w_layout.addWidget(path_2w_frame)
+
+        # 2W 详情滚动区
+        self.scroll_2w = QScrollArea()
+        self.scroll_2w.setWidgetResizable(True)
+        self.scroll_content_2w = QWidget()
+        self.scroll_layout_2w = QVBoxLayout(self.scroll_content_2w)
+        self.scroll_layout_2w.setSpacing(6)
+        self.scroll_layout_2w.setContentsMargins(12, 12, 12, 12)
+        self.scroll_layout_2w.setAlignment(Qt.AlignTop)
+        self.scroll_2w.setWidget(self.scroll_content_2w)
+        tab_2w_layout.addWidget(self.scroll_2w, stretch=1)
+
+        # 2W 上传ERP按钮
+        upload_2w_frame = QFrame()
+        upload_2w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        upload_2w_layout = QHBoxLayout(upload_2w_frame)
+        upload_2w_layout.setContentsMargins(12, 10, 12, 10)
+        self.btn_2w_upload = QPushButton("📤 上传ERP")
+        self.btn_2w_upload.setFixedHeight(34)
+        self.btn_2w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        upload_2w_layout.addWidget(self.btn_2w_upload)
+        tab_2w_layout.addWidget(upload_2w_frame)
+
+        self.detail_tabs.addTab(self.tab_2w, "🔹 2W资料")
+
+        # ----- 4W资料 Tab -----
+        self.tab_4w = QWidget()
+        tab_4w_layout = QVBoxLayout(self.tab_4w)
+        tab_4w_layout.setContentsMargins(0, 0, 0, 0)
+        tab_4w_layout.setSpacing(0)
+
+        # 4W 按钮栏
+        btn_4w_frame = QFrame()
+        btn_4w_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
+        btn_4w_layout = QHBoxLayout(btn_4w_frame)
+        btn_4w_layout.setContentsMargins(12, 10, 12, 10)
+        btn_4w_layout.setSpacing(8)
+        self.btn_4w_output = QPushButton("📦 4W输出")
+        self.btn_4w_check = QPushButton("📋 检查")
+        self.btn_4w_output.setFixedSize(85, 34)
+        self.btn_4w_check.setFixedSize(75, 34)
+        self.btn_4w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_4w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        btn_4w_layout.addWidget(self.btn_4w_output)
+        btn_4w_layout.addWidget(self.btn_4w_check)
+        btn_4w_layout.addStretch()
+        tab_4w_layout.addWidget(btn_4w_frame)
+
+        # 4W 输出文件路径
+        path_4w_frame = QFrame()
+        path_4w_frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-bottom:1px solid {GRAY_BORDER};}}")
+        path_4w_layout = QHBoxLayout(path_4w_frame)
+        path_4w_layout.setContentsMargins(12, 8, 12, 8)
+        path_4w_layout.setSpacing(6)
+        lbl_4w_path = QLabel("输出文件路径：")
+        lbl_4w_path.setFont(BOLD_FONT)
+        lbl_4w_path.setStyleSheet(f"color:{GRAY_TEXT_NORMAL};")
+        self.lbl_4w_path_val = QLabel("未选择")
+        self.lbl_4w_path_val.setStyleSheet(f"color:{GRAY_TEXT_DARK};")
+        self.lbl_4w_path_val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_4w_path_val.setWordWrap(True)
+        self.btn_4w_open_path = QPushButton("📂")
+        self.btn_4w_open_path.setFixedSize(30, 26)
+        self.btn_4w_open_path.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        path_4w_layout.addWidget(lbl_4w_path)
+        path_4w_layout.addWidget(self.lbl_4w_path_val, stretch=1)
+        path_4w_layout.addWidget(self.btn_4w_open_path)
+        tab_4w_layout.addWidget(path_4w_frame)
+
+        # 4W 详情滚动区
+        self.scroll_4w = QScrollArea()
+        self.scroll_4w.setWidgetResizable(True)
+        self.scroll_content_4w = QWidget()
+        self.scroll_layout_4w = QVBoxLayout(self.scroll_content_4w)
+        self.scroll_layout_4w.setSpacing(6)
+        self.scroll_layout_4w.setContentsMargins(12, 12, 12, 12)
+        self.scroll_layout_4w.setAlignment(Qt.AlignTop)
+        self.scroll_4w.setWidget(self.scroll_content_4w)
+        tab_4w_layout.addWidget(self.scroll_4w, stretch=1)
+
+        # 4W 上传ERP按钮
+        upload_4w_frame = QFrame()
+        upload_4w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        upload_4w_layout = QHBoxLayout(upload_4w_frame)
+        upload_4w_layout.setContentsMargins(12, 10, 12, 10)
+        self.btn_4w_upload = QPushButton("📤 上传ERP")
+        self.btn_4w_upload.setFixedHeight(34)
+        self.btn_4w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        upload_4w_layout.addWidget(self.btn_4w_upload)
+        tab_4w_layout.addWidget(upload_4w_frame)
+
+        self.detail_tabs.addTab(self.tab_4w, "🔸 4W资料")
+
+        detail_layout.addWidget(self.detail_tabs, stretch=1)
+
+        # 共用按钮栏（导入 / 转换）
+        common_btn_frame = QFrame()
+        common_btn_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        common_btn_layout = QHBoxLayout(common_btn_frame)
+        common_btn_layout.setContentsMargins(12, 10, 12, 10)
+        common_btn_layout.setSpacing(12)
         self.btn_input = QPushButton("📋 导入")
         self.btn_convert = QPushButton("🔄 转换")
-        for btn in [self.btn_output, self.btn_4w_out, self.btn_check, self.btn_input,self.btn_convert]:
-            btn.setFixedSize(70,34)
-        self.btn_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_4w_out.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_check.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_input.setFixedSize(75, 34)
+        self.btn_convert.setFixedSize(75, 34)
         self.btn_input.setStyleSheet(BUTTON_WARN_STYLE)
         self.btn_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
-        btn_layout.addWidget(self.btn_output)
-        btn_layout.addWidget(self.btn_check)
-        btn_layout.addWidget(self.btn_4w_out)
-        btn_layout.addWidget(self.btn_input)
-        btn_layout.addWidget(self.btn_convert)
-        detail_layout.addWidget(btn_frame)
+        common_btn_layout.addStretch()
+        common_btn_layout.addWidget(self.btn_input)
+        common_btn_layout.addWidget(self.btn_convert)
+        common_btn_layout.addStretch()
+        detail_layout.addWidget(common_btn_frame)
 
-        # 滚动详情区
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setSpacing(6)
-        self.scroll_layout.setContentsMargins(12,12,12,12)
-        self.scroll_layout.setAlignment(Qt.AlignTop)
-        self.scroll_area.setWidget(self.scroll_content)
-        detail_layout.addWidget(self.scroll_area)
-
-        # 上传按钮栏
-        upload_frame = QFrame()
-        upload_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
-        upload_layout = QHBoxLayout(upload_frame)
-        upload_layout.setContentsMargins(12, 10, 12, 10)
-        upload_layout.setSpacing(12)
-        self.upload_data = QPushButton("📤 上传ERP")
-        self.upload_data.setFixedSize(300, 34)
-        self.upload_data.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        upload_layout.addWidget(self.upload_data)
-        detail_layout.addWidget(upload_frame)
+        # 保持兼容：旧引用指向新控件
+        self.btn_output = self.btn_2w_output
+        self.btn_4w_out = self.btn_4w_output
+        self.btn_check = self.btn_2w_check
+        self.scroll_area = self.scroll_2w
+        self.scroll_layout = self.scroll_layout_2w
+        self.upload_data = self.btn_2w_upload
+        self.scroll_content = self.scroll_content_2w
 
         content_layout.addWidget(detail_frame, stretch=30)
         layout.addLayout(content_layout)
@@ -724,12 +872,16 @@ class FlyPinWindow(QMainWindow):
         self.cb_status.currentTextChanged.connect(self.do_search)
         self.cb_operation.currentTextChanged.connect(self.do_search)
 
-        self.btn_output.clicked.connect(self.do_make)
-        self.btn_4w_out.clicked.connect(self.do_4w_out)
-        self.btn_check.clicked.connect(self.do_check)
+        self.btn_2w_output.clicked.connect(self.do_2w_make)
+        self.btn_2w_check.clicked.connect(self.do_2w_check)
+        self.btn_4w_output.clicked.connect(self.do_4w_out)
+        self.btn_4w_check.clicked.connect(self.do_4w_check)
         self.btn_input.clicked.connect(self.do_input)
         self.btn_convert.clicked.connect(self.do_convert)
-        self.upload_data.clicked.connect(self.do_upload)
+        self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
+        self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
+        self.btn_2w_open_path.clicked.connect(self.open_file_folder)
+        self.btn_4w_open_path.clicked.connect(self.open_file_folder)
 
         return page
 
@@ -1554,25 +1706,30 @@ class FlyPinWindow(QMainWindow):
                 os.startfile(folder_path)
 
     def update_detail(self):
-        # 清空原有详情
-        while self.scroll_layout.count() > 0:
-            item = self.scroll_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+        # 清空原有详情（2W和4W）
+        for layout in [self.scroll_layout_2w, self.scroll_layout_4w]:
+            while layout.count() > 0:
+                item = layout.takeAt(0)
+                w = item.widget()
+                if w:
+                    w.deleteLater()
 
         items = self.table.selectedItems()
         if not items:
-            self.btn_output.setEnabled(False)
-            self.btn_check.setEnabled(False)
-            self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            for btn in [self.btn_2w_output, self.btn_2w_check, self.btn_4w_output,
+                        self.btn_4w_check, self.btn_input, self.btn_convert,
+                        self.btn_2w_upload, self.btn_4w_upload]:
+                btn.setEnabled(False)
+            self.lbl_2w_path_val.setText("未选择")
+            self.lbl_4w_path_val.setText("未选择")
             tip_label = QLabel("请在左侧表格选择一行数据查看详情")
             tip_label.setAlignment(Qt.AlignCenter)
             tip_label.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};font-size:10pt;padding:40px 0;")
-            self.scroll_layout.addWidget(tip_label)
+            self.scroll_layout_2w.addWidget(tip_label)
+            tip_label2 = QLabel("请在左侧表格选择一行数据查看详情")
+            tip_label2.setAlignment(Qt.AlignCenter)
+            tip_label2.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};font-size:10pt;padding:40px 0;")
+            self.scroll_layout_4w.addWidget(tip_label2)
             return
 
         row_idx = items[0].row()
@@ -1589,46 +1746,90 @@ class FlyPinWindow(QMainWindow):
         self.current_pn = f"{item_no}{rev}"
         self.current_status = get_cell(6)
         self.current_file_path = get_cell(9)
-        self.current_test_point = get_cell(14)
+        self.current_2w_test_point = get_cell(14)
+        self.current_4w_test_point = get_cell(15)
+        # 保留兼容
+        self.current_test_point = self.current_2w_test_point
 
-        self.btn_output.setEnabled(True)
-        self.btn_check.setEnabled(True)
-        self.btn_convert.setEnabled(True)
-        self.btn_4w_out.setEnabled(True)
-        self.btn_input.setEnabled(True)
-        self.upload_data.setEnabled(True)
+        # ===== 2W 按钮状态 =====
+        self.btn_2w_output.setEnabled(True)
+        self.btn_2w_check.setEnabled(True)
+        self.btn_2w_upload.setEnabled(True)
         if self.current_status in ["未运行", "未输出"]:
-            self.btn_check.setEnabled(False)
-            self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
+        elif self.current_status == "未检查":
+            self.btn_2w_upload.setEnabled(False)
+        elif self.current_status == "已完成":
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
+
+        # ===== 4W 按钮状态 =====
+        self.btn_4w_output.setEnabled(True)
+        self.btn_4w_check.setEnabled(True)
+        self.btn_4w_upload.setEnabled(True)
+        if self.current_status in ["未运行", "未输出"]:
+            self.btn_4w_output.setEnabled(False)
+            self.btn_4w_check.setEnabled(False)
+            self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "未检查":
+            self.btn_4w_output.setEnabled(False)
+            self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "未转换":
+            self.btn_4w_check.setEnabled(True)
+            self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "已完成":
+            self.btn_4w_output.setEnabled(False)
+            self.btn_4w_check.setEnabled(False)
+            self.btn_4w_upload.setEnabled(False)
+
+        # ===== 共用按钮状态 =====
+        self.btn_input.setEnabled(True)
+        self.btn_convert.setEnabled(True)
+        if self.current_status in ["未运行", "未输出"]:
             self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_convert.setEnabled(False)
         elif self.current_status == "未检查":
             self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
             self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
         elif self.current_status == "未转换":
-            self.btn_check.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.upload_data.setEnabled(False)
-        elif self.current_status == "已完成":
-            self.btn_check.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_input.setEnabled(False)
 
-        detail_list = [
-            ("输出文件路径", 9),
+        # ===== 更新路径标签 =====
+        file_path = self.current_file_path
+        self.lbl_2w_path_val.setText(file_path if file_path else "无")
+        self.lbl_4w_path_val.setText(file_path if file_path else "无")
+
+        # ===== 2W Tab 详情 =====
+        detail_2w = [
             ("输出人", 10),
             ("输出开始时间", 11),
             ("输出完成时间", 12),
             ("输出总耗时", 13),
             ("2W测试点数", 14),
+            ("检查人", 16),
+            ("检查开始时间", 17),
+            ("检查完成时间", 18),
+            ("检查总耗时", 19),
+        ]
+        self._populate_detail_layout(self.scroll_layout_2w, detail_2w, get_cell)
+
+        # ===== 4W Tab 详情 =====
+        detail_4w = [
+            ("输出人", 10),
+            ("输出开始时间", 11),
+            ("输出完成时间", 12),
+            ("输出总耗时", 13),
             ("4W测试点数", 15),
             ("检查人", 16),
             ("检查开始时间", 17),
             ("检查完成时间", 18),
-            ("检查总耗时", 19)
+            ("检查总耗时", 19),
         ]
+        self._populate_detail_layout(self.scroll_layout_4w, detail_4w, get_cell)
+
+    def _populate_detail_layout(self, layout, detail_list, get_cell_fn):
+        """填充详情信息到指定的 layout"""
         for title, col in detail_list:
             frame = QFrame()
             frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-radius:6px;border:1px solid {GRAY_BORDER};}}")
@@ -1636,23 +1837,15 @@ class FlyPinWindow(QMainWindow):
             hly.setContentsMargins(10, 8, 10, 8)
             lab_name = QLabel(f"{title}：")
             lab_name.setFont(BOLD_FONT)
-            lab_name.setFixedWidth(120)
+            lab_name.setFixedWidth(110)
             lab_name.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            val_txt = get_cell(col)
+            val_txt = get_cell_fn(col)
             val_label = QLabel(val_txt if val_txt else "无")
             val_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             val_label.setWordWrap(True)
             hly.addWidget(lab_name)
             hly.addWidget(val_label)
-
-            if title == "输出文件路径" and val_txt:
-                path_btn = QPushButton("📂")
-                path_btn.setFixedSize(30, 26)
-                path_btn.setStyleSheet(BUTTON_PRIMARY_STYLE)
-                path_btn.clicked.connect(lambda: self.open_file_folder())
-                hly.addWidget(path_btn)
-
-            self.scroll_layout.addWidget(frame)
+            layout.addWidget(frame)
 
     def get_work_status(self, val):
         return str(val).strip() if val else "未运行"
@@ -1838,29 +2031,52 @@ class FlyPinWindow(QMainWindow):
         except:
             return False
 
-    def do_make(self):
+    def do_2w_make(self):
+        """2W资料输出"""
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
         self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "both")
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "2w")
         self.showNormal()
         self.activateWindow()
-        QMessageBox.information(self,"结果","输出成功" if ok else "输出失败")
+        QMessageBox.information(self,"结果","2W输出成功" if ok else "2W输出失败")
         self.update_single_row(self.current_did)
 
-    def do_check(self):
+    def do_2w_check(self):
+        """2W资料检查"""
         if self.current_status != "未检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
         self.showMinimized()
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "both")
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "2w")
         self.showNormal()
         self.activateWindow()
-        QMessageBox.information(self,"结果","检查成功" if ok else "检查失败")
+        QMessageBox.information(self,"结果","2W检查成功" if ok else "2W检查失败")
         self.update_single_row(self.current_did)
+
+    def do_4w_check(self):
+        """4W资料检查"""
+        if self.current_status != "未检查":
+            QMessageBox.warning(self,"提示","状态不允许检查")
+            return
+        self.showMinimized()
+        fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "4w")
+        self.showNormal()
+        self.activateWindow()
+        QMessageBox.information(self,"结果","4W检查成功" if ok else "4W检查失败")
+        self.update_single_row(self.current_did)
+
+    def do_make(self):
+        """兼容旧版：2W输出"""
+        self.do_2w_make()
+
+    def do_check(self):
+        """兼容旧版：2W检查"""
+        self.do_2w_check()
 
     def do_input(self):
         msg_box = QMessageBox()
@@ -2044,9 +2260,10 @@ class FlyPinWindow(QMainWindow):
         dt = db.SQL_EXECUTE(sql)
         return dt
 
-    def do_upload(self):
+    def do_upload(self, layer='2w'):
         """
         上传ERP - 自定义弹窗表单
+        layer: '2w' 或 '4w'，用于区分上传来源
         """
 
         if not self.current_pn or not self.current_org_id:
@@ -2054,7 +2271,8 @@ class FlyPinWindow(QMainWindow):
             return
 
         dialog = QDialog(self)
-        dialog.setWindowTitle("ERP 上传表单")
+        title_layer = "2W" if layer == '2w' else "4W"
+        dialog.setWindowTitle(f"ERP 上传表单 [{title_layer}资料]")
         dialog.setFixedSize(450, 380)
         dialog.setFont(GLOBAL_FONT)
 
@@ -2089,8 +2307,9 @@ class FlyPinWindow(QMainWindow):
 
         self.lbl_update_date = QLabel(now_time)
 
+        test_point = self.current_2w_test_point if layer == '2w' else self.current_4w_test_point
         self.edit_attribute1 = QLineEdit()
-        self.edit_attribute1.setText(self.current_test_point.strip())
+        self.edit_attribute1.setText(test_point.strip() if test_point else '')
         self.edit_attribute1.setStyleSheet(INPUT_NORMAL_STYLE)
 
         self.lbl_jg_mb = QLabel("Y")
