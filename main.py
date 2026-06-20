@@ -751,7 +751,8 @@ class FlyPinWindow(QMainWindow):
         self.btn_2w_upload.setFixedHeight(34)
         self.btn_2w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
         upload_2w_layout.addWidget(self.btn_2w_upload)
-        tab_2w_layout.addWidget(upload_2w_frame)
+        # tab_2w_layout.addWidget(upload_2w_frame)
+        detail_layout.addWidget(upload_2w_frame)
 
         self.detail_tabs.addTab(self.tab_2w, "🔹 2W资料")
 
@@ -767,7 +768,7 @@ class FlyPinWindow(QMainWindow):
         btn_4w_layout = QHBoxLayout(btn_4w_frame)
         btn_4w_layout.setContentsMargins(12, 10, 12, 10)
         btn_4w_layout.setSpacing(8)
-        self.btn_4w_output = QPushButton("📦 4W输出")
+        self.btn_4w_output = QPushButton("📤 输出")
         self.btn_4w_check = QPushButton("📋 检查")
         self.btn_4w_input = QPushButton("📋 导入")
         self.btn_4w_convert = QPushButton("🔄 转换")
@@ -816,16 +817,16 @@ class FlyPinWindow(QMainWindow):
         self.scroll_4w.setWidget(self.scroll_content_4w)
         tab_4w_layout.addWidget(self.scroll_4w, stretch=1)
 
-        # 4W 上传ERP按钮
-        upload_4w_frame = QFrame()
-        upload_4w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
-        upload_4w_layout = QHBoxLayout(upload_4w_frame)
-        upload_4w_layout.setContentsMargins(12, 10, 12, 10)
-        self.btn_4w_upload = QPushButton("📤 上传ERP")
-        self.btn_4w_upload.setFixedHeight(34)
-        self.btn_4w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        upload_4w_layout.addWidget(self.btn_4w_upload)
-        tab_4w_layout.addWidget(upload_4w_frame)
+        # # 4W 上传ERP按钮
+        # upload_4w_frame = QFrame()
+        # upload_4w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        # upload_4w_layout = QHBoxLayout(upload_4w_frame)
+        # upload_4w_layout.setContentsMargins(12, 10, 12, 10)
+        # self.btn_4w_upload = QPushButton("📤 上传ERP")
+        # self.btn_4w_upload.setFixedHeight(34)
+        # self.btn_4w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        # upload_4w_layout.addWidget(self.btn_4w_upload)
+        # tab_4w_layout.addWidget(upload_4w_frame)
 
         self.detail_tabs.addTab(self.tab_4w, "🔸 4W资料")
 
@@ -877,7 +878,7 @@ class FlyPinWindow(QMainWindow):
         self.btn_4w_input.clicked.connect(self.do_input)
         self.btn_4w_convert.clicked.connect(self.do_convert)
         self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
-        self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
+        # self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
         self.btn_2w_open_path.clicked.connect(self.open_file_folder)
         self.btn_4w_open_path.clicked.connect(self.open_file_folder)
 
@@ -1716,7 +1717,7 @@ class FlyPinWindow(QMainWindow):
         if not items:
             for btn in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert,
                         self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert,
-                        self.btn_2w_upload, self.btn_4w_upload]:
+                        self.btn_2w_upload]:
                 btn.setEnabled(False)
             self.lbl_2w_path_val.setText("未选择")
             self.lbl_4w_path_val.setText("未选择")
@@ -1778,27 +1779,27 @@ class FlyPinWindow(QMainWindow):
         self.btn_4w_check.setEnabled(True)
         self.btn_4w_input.setEnabled(True)
         self.btn_4w_convert.setEnabled(True)
-        self.btn_4w_upload.setEnabled(True)
+        # self.btn_4w_upload.setEnabled(True)
         if self.current_status in ["未运行", "未输出"]:
-            self.btn_4w_output.setEnabled(False)
+            # self.btn_4w_output.setEnabled(False)
             self.btn_4w_check.setEnabled(False)
             self.btn_4w_input.setEnabled(False)
             self.btn_4w_convert.setEnabled(False)
-            self.btn_4w_upload.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "未检查":
-            self.btn_4w_output.setEnabled(False)
+            # self.btn_4w_output.setEnabled(False)
             self.btn_4w_convert.setEnabled(False)
             self.btn_4w_input.setEnabled(False)
-            self.btn_4w_upload.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "未转换":
             self.btn_4w_check.setEnabled(True)
             self.btn_4w_input.setEnabled(False)
-            self.btn_4w_upload.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
         elif self.current_status == "已完成":
-            self.btn_4w_output.setEnabled(False)
+            # self.btn_4w_output.setEnabled(False)
             self.btn_4w_check.setEnabled(False)
             self.btn_4w_input.setEnabled(False)
-            self.btn_4w_upload.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
 
         # ===== 更新路径标签 =====
         file_path = self.current_file_path
