@@ -698,7 +698,7 @@ class FlyPinWindow(QMainWindow):
         self.btn_2w_input = QPushButton("📋 导入")
         self.btn_2w_convert = QPushButton("🔄 转换")
         for b in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert]:
-            b.setFixedSize(75, 34)
+            b.setFixedSize(85, 34)
         self.btn_2w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_2w_check.setStyleSheet(BUTTON_WARN_STYLE)
         self.btn_2w_input.setStyleSheet(BUTTON_WARN_STYLE)
@@ -773,7 +773,7 @@ class FlyPinWindow(QMainWindow):
         self.btn_4w_input = QPushButton("📋 导入")
         self.btn_4w_convert = QPushButton("🔄 转换")
         for b in [self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert]:
-            b.setFixedSize(75, 34)
+            b.setFixedSize(85, 34)
         self.btn_4w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
         self.btn_4w_check.setStyleSheet(BUTTON_WARN_STYLE)
         self.btn_4w_input.setStyleSheet(BUTTON_WARN_STYLE)
