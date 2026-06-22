@@ -874,24 +874,11 @@ class FlyingProbeCoreProcessor:
         self.gen.COM(cmd % (job_name, out_dir))
         self._move_file_to_network(f'{out_dir}/{job_name}.tgz',net_dir)
 
-    def create_and_output_test_files(self, mode='2w'):
+    def create_and_output_test_files(self, mode='2w',job=None):
         """统一创建测试点并输出所有文件（独立流程）"""
         logger.info(f"\n=============== 开始输出【{mode}】资料 ===============")
-        job = self.internal_job
         if self.mode in ['check','input']:
-            if mode == '4w' and self.mode == 'check':
-                job = self.internal_job + '-4w'
-                self.clean_existing_job(job)
-                self.import_job_from_tgz(job)
-                self.gen.COM(f'check_inout,mode=out,type=job,job={job}')
-                self.open_job(job)
-                self.open_step(job, self.run_step)
-                self.gen.COM('units,type=inch')
-                self.delete_non_board_layers()
-
-                # show_error_message("温馨提示", '请认真核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
-                self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
-
+            self.gen.PAUSE('请检查系统生成的测试点是否正确,如有问题修正后需重新输出...')
             s = show_error_message("温馨提示", f'是否需要重新输出{mode}资料?...')
             if s != 16:
                 return ''
@@ -900,14 +887,6 @@ class FlyingProbeCoreProcessor:
                 self.gen.COM(f'save_job,job={job},override=no')
 
         else:
-            if mode == '4w':
-                job = self.internal_job + '-4w'
-                self.clean_existing_job(job)
-                self.gen.COM(f'copy_entity,type=job,source_job={self.internal_job},source_name={self.internal_job},dest_job={job},dest_name={job},dest_database=ezcam,copy_step_mode=all_layer,lyrs=')
-                self.gen.COM(f'check_inout,mode=out,type=job,job={job}')
-                self.open_job(job)
-                self.open_step(job, self.run_step)
-
             self.create_flying_test_points(job, mode)
             if not self.is_auto_mode():
                 # show_error_message('检查测试点',f'{mode}测试点创建完成，请检查')
@@ -933,7 +912,7 @@ class FlyingProbeCoreProcessor:
 
     def import_job_from_tgz(self,job):
         """从TGZ文件导入工程"""
-        tgz_file = self._build_tgz_file_path(job)
+        tgz_file = self._build_tgz_file_path(job if self.output_mode == '2w' else job.replace('-4w',''))
         logger.info(f"【{self.raw_job}】开始导入TGZ：{tgz_file}")
         if not os.path.exists(tgz_file):
             err = f"TGZ文件不存在：{tgz_file}"
@@ -1087,12 +1066,17 @@ class FlyingProbeCoreProcessor:
         logger.info(f"【{self.raw_job}】 处理无铜孔 | 处理完成...")
 
     # ====================== 核心修改：独立 2W / 4W 流程 ======================
-    def prepare_common_process(self):
+    def prepare_common_process(self,m,job):
         """公共前置流程：只执行一次（导入TGZ、清理图层、板型检查、网络比对等）"""
-        job = self.internal_job
-        if self.output_mode == '4w' and self.mode != '4w_out':
-            job = self.internal_job + '-4w'
         self.clean_existing_job(job)
+        # 如果是自动模式+4W输出，则复制一个料号出来
+        if self.is_auto_mode() and m == '4w':
+            self.gen.COM(f'copy_entity,type=job,source_job={self.internal_job},source_name={self.internal_job},dest_job={job},dest_name={job},dest_database=ezcam,copy_step_mode=all_layer,lyrs=')
+            self.gen.COM(f'check_inout,mode=out,type=job,job={job}')
+            self.open_job(job)
+            self.open_step(job, self.run_step)
+            return
+
         self.import_job_from_tgz(job)
         self.gen.COM(f'check_inout,mode=out,type=job,job={job}')
         self.open_job(job)
@@ -1103,8 +1087,6 @@ class FlyingProbeCoreProcessor:
         if self.mode in ['check','input']:
             # show_error_message("温馨提示", '请认真核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
             self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
-            return
-        elif self.mode == '4w_out':
             return
 
         if self.is_auto_mode():
@@ -1135,10 +1117,10 @@ class FlyingProbeCoreProcessor:
             self._delete_outside_features()
             self.run_net_compare(self.run_step, '原稿')
 
-    def process_single_mode(self, test_mode):
+    def process_single_mode(self, test_mode,job):
         """单独输出一种模式：2W 或 4W（完全独立）"""
         logger.info(f"\n#################### 执行输出：{test_mode} ####################")
-        point = self.create_and_output_test_files(test_mode)
+        point = self.create_and_output_test_files(test_mode,job)
         return point
 
     def get_job_status(self):
@@ -1147,7 +1129,7 @@ class FlyingProbeCoreProcessor:
             self.init_erp_conn()
             sql = f"""
                 SELECT 
-                    us.data_id, us.ORG_ID ,US.item_no, us.rev, us.creation_date,us.REMARK,us.ATTRIBUTE4 ,us.ATTRIBUTE10 ,us.ATTRIBUTE11 ,us.ATTRIBUTE16  
+                    us.data_id, us.ORG_ID ,US.item_no, us.rev, us.creation_date,us.STATUS  
                 FROM 
                     INP.INP_FLYPIN_PROBE_TOOL_ALERT US
                 WHERE US.DATA_ID = {self.data_id}
@@ -1164,57 +1146,11 @@ class FlyingProbeCoreProcessor:
         output_mode = 4w → 只输出4w
         output_mode = both → 先2w后4w
         """
-        start_time = datetime.datetime.now()
-        two_point = ""
-        four_point = ""
-
         try:
             logger.info("\n==================== 【全自动流程开始】 ====================")
             # 加载参数
             self.load_task_parameters()
-            # 上传开始时间
-            if self.mode not in ['input','4w_out']:
-                # print(self.mode,'****************')
-                # sys.exit(0)
-                if self.mode not in ['check']:
-                    # 避免重复生成
-                    output_file = self.output_2w_path_network + '\\' + self.raw_job + '-panel.356'
-                    output_file_emm = self.output_2w_path_network + '\\' + self.raw_job + '-panel.emm'
-                    output_file_a = self.output_2w_path_network + '\\' + self.raw_job + '-panela.356'
-                    output_file_a_emm = self.output_2w_path_network + '\\' + self.raw_job + '-panela.emm'
-                    js = self.get_job_status()
-                    for p in [output_file, output_file_emm, output_file_a, output_file_a_emm]:
-                        if os.path.exists(p):
-                            if self.is_auto_mode():
-                                if len(js) > 0:
-                                    if js[0]['ATTRIBUTE16'] in ['已完成','未转换','未检查']:
-                                        if js[0]['ATTRIBUTE16'] == '未检查' and js[0]['ATTRIBUTE10'] == '':
-                                            break
-                                        return True
-                                # logger.info(f"【{self.raw_job}】飞针文件{p}已存在，直接上报结果")
-                                # mtime = time.localtime(os.path.getmtime(p))
-                                # end_time = time.strftime("%Y-%m-%d %H:%M:%S", mtime)
-                                # self.upload_result_to_database(
-                                #     is_exist=True,
-                                #     end_time=end_time,
-                                #     job_dir=p,
-                                #     operation_class_code=operation_class_code
-                                # )
-                                # return True
-                            else:
-                                s = show_error_message("温馨提示", f"{self.raw_job} 飞针资料已输出,是否继续？ \n{p}")
-                                if s != 16:
-                                    return False
-                                else:
-                                    logger.info(f"【{self.raw_job}】飞针资料已输出,继续输出.")
-                                    break
-
-                self.upload_result_to_database(start_time=start_time, operation_class_code=operation_class_code)
-
-            # ====== 1. 公共准备（只做一次）======
-            self.prepare_common_process()
-
-            # ====== 2. 获取要输出的模式列表 ======
+            # ====== 1. 获取要输出的模式列表 ======
             if self.output_mode == "2w":
                 mode_list = ["2w"]
             elif self.output_mode == "4w":
@@ -1227,12 +1163,71 @@ class FlyingProbeCoreProcessor:
                 else:
                     mode_list = ["2w"]
 
+            for m in mode_list:
+                if self.mode not in ['input','check']:
+                    # 避免重复生成
+                    output_path_network = self.output_2w_path_network
+                    if m == '4w':
+                        output_path_network = self.output_4w_path_network
+
+                    output_file = output_path_network + '\\' + self.raw_job + '-panel.356'
+                    output_file_emm = output_path_network + '\\' + self.raw_job + '-panel.emm'
+                    output_file_a = output_path_network + '\\' + self.raw_job + '-panela.356'
+                    output_file_a_emm = output_path_network + '\\' + self.raw_job + '-panela.emm'
+                    js = self.get_job_status()
+                    for p in [output_file, output_file_emm, output_file_a, output_file_a_emm]:
+                        if os.path.exists(p):
+                            if self.is_auto_mode():
+                                if len(js) > 0:
+                                    if js[0]['STATUS'] in ['已完成','未转换','未检查']:
+                                        if js[0]['STATUS'] == '未检查' and js[0]['TEST_POINT_2W'] == '':
+                                            break
+                                        return True
+                            else:
+                                s = show_error_message("温馨提示", f"{self.raw_job} 飞针资料已输出,是否继续？ \n{p}")
+                                if s != 16:
+                                    return False
+                                else:
+                                    logger.info(f"【{self.raw_job}】飞针资料已输出,继续输出.")
+                                    break
+
+            start_time = datetime.datetime.now()
             # ====== 3. 循环独立输出 2W / 4W ======
             for m in mode_list:
+                # ====== 2. 公共准备（只做一次）======
                 if m == "2w":
-                    two_point = self.process_single_mode(m)
+                    start_time_2W = datetime.datetime.now()
+                    job = self.internal_job
+                    self.prepare_common_process(m,job)
+                    test_point = self.process_single_mode(m,job)
+                    end_time_2W = datetime.datetime.now()
+                    cost_min = round((end_time_2W - start_time_2W).total_seconds() / 60, 2)
+
+                    # if self.mode not in ['input']:
+                    self.upload_result_to_database(
+                        start_time=start_time,
+                        end_time=datetime.datetime.now(),
+                        cost_seconds=str(cost_min),
+                        test_point=str(test_point),
+                        output_mode=m
+                    )
+
                 elif m == "4w":
-                    four_point = self.process_single_mode(m)
+                    start_time_4W = datetime.datetime.now()
+                    job = self.internal_job + '-4w'
+                    self.prepare_common_process(m,job)
+                    test_point = self.process_single_mode(m,job)
+                    end_time_4W = datetime.datetime.now()
+                    cost_min = round((end_time_4W - start_time_4W).total_seconds() / 60, 2)
+
+                    # if self.mode not in ['input']:
+                    self.upload_result_to_database(
+                        start_time=start_time,
+                        end_time=datetime.datetime.now(),
+                        cost_seconds=str(cost_min),
+                        test_point=str(test_point),
+                        output_mode=m
+                    )
 
             if self.is_auto_mode():
                 if '2w' in mode_list:
@@ -1243,16 +1238,6 @@ class FlyingProbeCoreProcessor:
             # ====== 4. 完成上报 ======
             cost_min = round((datetime.datetime.now() - start_time).total_seconds() / 60, 2)
             logger.info(f"\n流程全部完成 | 总耗时：{cost_min} 分钟")
-
-            self.upload_result_to_database(
-                is_exist=False,
-                end_time=datetime.datetime.now(),
-                job_dir=self.output_path,
-                operation_class_code=operation_class_code,
-                cost_seconds=str(cost_min),
-                two_point=str(two_point),
-                four_point=str(four_point)
-            )
 
             if not self.is_auto_mode():
                 if self.mode == 'task':
@@ -1267,117 +1252,212 @@ class FlyingProbeCoreProcessor:
             err_msg = str(e)[:120]
             logger.error(f"流程失败：{err_msg}")
             logger.error(traceback.format_exc())
-            # if self.mode not in ['check','input','4w_out']:
             if self.is_auto_mode():
-                self.upload_result_to_database(error_msg=err_msg, operation_class_code=operation_class_code)
+                self.upload_result_to_database(error_msg=err_msg)
             return False
 
-    def upload_result_to_database(self, is_exist=False, start_time=None, end_time=None,job_dir=None, error_msg=None,
-                                  operation_class_code=None, cost_seconds='',two_point='',four_point=''):
+    def upload_result_to_database(self,is_exist=False,start_time=None,end_time=None,error_msg=None,cost_seconds='',test_point='',output_mode=None):
         """上传处理结果到数据库"""
-        if operation_class_code != 'ET_DATA':
-            return
-
         try:
             self.init_erp_conn()
             logger.info(f"【{self.raw_job}】上报数据库")
-            # time_str = start_time.strftime("%Y-%m-%d %H:%M:%S") if start_time else (
-            #     end_time.strftime("%Y-%m-%d %H:%M:%S") if end_time else datetime.datetime.now().strftime(
-            #         "%Y-%m-%d %H:%M:%S"))
-            if start_time:
-                if start_time and isinstance(start_time, datetime.datetime):
-                    time_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
-                else:
-                    time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            else:
-                if end_time and isinstance(end_time, datetime.datetime):
-                    time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
-                else:
-                    time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            start_time_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
+            end_time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
 
-            if self.output_mode == '2w':
-                sql = f"""
-                    UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT
-                    SET ATTRIBUTE10='{two_point}'
+            if output_mode == '2w':
+                output_path = self.output_2w_path_network
+            else:
+                output_path = self.output_4w_path_network
+
+            if error_msg:
+                STATUS = '未输出'
+                info = self._get_remark(self.data_id)
+                if error_msg == info and re.search(re.compile('Invalid argument|when reading a line'), error_msg):
+                    sql = f"""
+                    UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT 
+                        SET WRITE_FLAG='Y', remark='{error_msg}', write_date=SYSDATE, write_by='sys_tem', STATUS='{STATUS}', attribute4='0'
                     WHERE data_id={self.data_id}
-                """
-                self.db_erp.SQL_EXECUTE(sql)
-            elif self.output_mode == '4w':
-                sql = f"""
-                    UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT
-                    SET ATTRIBUTE11='{four_point}'
+                    """
+                else:
+                    sql = f"""
+                    UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT 
+                    SET WRITE_FLAG='Y', remark='{error_msg}', write_date=SYSDATE, write_by='sys_tem', STATUS='{STATUS}'
                     WHERE data_id={self.data_id}
-                """
+                    """
                 self.db_erp.SQL_EXECUTE(sql)
             else:
                 if self.mode in ['check']:
-                    if start_time:
-                        sql = f"""
-                        UPDATE  INP.INP_FLYPIN_PROBE_TOOL_ALERT
-                        SET  ATTRIBUTE12 = '{self.user_id}',ATTRIBUTE13 = '{time_str}'
-                        WHERE data_id = {self.data_id}
-                        """
-                        self.db_erp.SQL_EXECUTE(sql)
+                    STATUS = '未转换'
+                    if output_mode == '2w':
+                        if test_point != '':
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                STATUS = '{STATUS}',
+                                OUTPUT_PATH_2W = '{output_path}',
+                                OUTPUT_BY_2W = '{self.user_id}',
+                                OUTPUT_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_2W = '{cost_seconds}',
+                                TEST_POINT_2W = '{test_point}',
+                                LAST_UPDATE_DATE_2W = SYSDATE,
+                                LAST_UPDATED_BY_2W = '{self.user_id}',
+                                CHECK_BY_2W = '{self.user_id}',
+                                CHECK_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_2W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
+                        else:
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                STATUS = '{STATUS}',
+                                CHECK_BY_2W = '{self.user_id}',
+                                CHECK_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_2W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
                     else:
-                        ATTRIBUTE16 = '未转换'
-                        ins = ''
-                        if two_point != '' and four_point != '':
-                            ins = f""",ATTRIBUTE10 = '{two_point}',ATTRIBUTE11 = '{four_point}'"""
-                        elif two_point != '':
-                            ins = f""",ATTRIBUTE10 = '{two_point}'"""
-                        elif four_point != '':
-                            ins = f""",ATTRIBUTE11 = '{four_point}'"""
-                        sql = f"""
-                            UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT
-                            SET ATTRIBUTE14 = '{time_str}',ATTRIBUTE15 = '{cost_seconds}',ATTRIBUTE16 = '{ATTRIBUTE16}'{ins}
-                            WHERE data_id = {self.data_id}"""
-
-                        self.db_erp.SQL_EXECUTE(sql)
+                        if test_point != '':
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                STATUS= '{STATUS}',
+                                OUTPUT_PATH_4W = '{output_path}',
+                                OUTPUT_BY_4W = '{self.user_id}',
+                                OUTPUT_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_4W = '{cost_seconds}',
+                                TEST_POINT_4W = '{test_point}',
+                                LAST_UPDATE_DATE_4W = SYSDATE,
+                                LAST_UPDATED_BY_4W = '{self.user_id}',
+                                CHECK_BY_4W = '{self.user_id}',
+                                CHECK_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_4W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
+                        else:
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                STATUS= '{STATUS}',
+                                CHECK_BY_4W = '{self.user_id}',
+                                CHECK_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_4W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
                 else:
-                    if error_msg:
-                        ATTRIBUTE16 = '未输出'
-                        info = self._get_remark(self.data_id)
-                        if error_msg == info and re.search(re.compile('Invalid argument|when reading a line'),error_msg):
+                    remark = '已输出' if is_exist else '输出成功，软硬结合板类型' if self.raw_job[12:14] == '23' else '输出成功'
+                    STATUS = '未检查'
+                    if self.is_auto_mode():
+                        if output_mode == '2w':
                             sql = f"""
-                            UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT 
-                            SET WRITE_FLAG='Y', remark='{error_msg}', write_date=SYSDATE, write_by='sys_tem', ATTRIBUTE16='{ATTRIBUTE16}', attribute4='0'
-                            WHERE data_id={self.data_id}
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                WRITE_FLAG = 'Y',
+                                write_date = SYSDATE,
+                                write_by = 'sys_tem',
+                                remark = '{remark}',
+                                STATUS= '{STATUS}',
+                                OUTPUT_PATH_2W = '{output_path}',
+                                OUTPUT_BY_2W = '{self.user_id}',
+                                OUTPUT_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_2W = '{cost_seconds}',
+                                TEST_POINT_2W = '{test_point}',
+                                LAST_UPDATE_DATE_2W = SYSDATE,
+                                LAST_UPDATED_BY_2W = '{self.user_id}'
+                            WHERE
+                                data_id = {self.data_id}
                             """
                         else:
                             sql = f"""
-                            UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT 
-                            SET WRITE_FLAG='Y', remark='{error_msg}', write_date=SYSDATE, write_by='sys_tem', ATTRIBUTE16='{ATTRIBUTE16}'
-                            WHERE data_id={self.data_id}
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                WRITE_FLAG = 'Y',
+                                write_date = SYSDATE,
+                                write_by = 'sys_tem',
+                                remark = '{remark}',
+                                STATUS= '{STATUS}',
+                                OUTPUT_PATH_4W = '{output_path}',
+                                OUTPUT_BY_4W = '{self.user_id}',
+                                OUTPUT_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_4W = '{cost_seconds}',
+                                TEST_POINT_4W = '{test_point}',
+                                LAST_UPDATE_DATE_4W = SYSDATE,
+                                LAST_UPDATED_BY_4W = '{self.user_id}'
+                            WHERE
+                                data_id = {self.data_id}
                             """
-                        self.db_erp.SQL_EXECUTE(sql)
                     else:
-                        job_dir = (job_dir or "").replace("'", "''")
-                        remark = '已输出' if is_exist else '输出成功，软硬结合板类型' if self.raw_job[12:14] == '23' else '输出成功'
-                        ATTRIBUTE16 = '未检查'
-
-                        if start_time:
+                        STATUS = '未转换'
+                        if output_mode == '2w':
                             sql = f"""
-                            UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT 
-                            SET WRITE_FLAG='Y', write_date=SYSDATE, write_by='sys_tem', ATTRIBUTE6='{self.user_id}', ATTRIBUTE7='{time_str}'
-                            WHERE data_id={self.data_id}
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                WRITE_FLAG = 'Y',
+                                write_date = SYSDATE,
+                                write_by = 'sys_tem',
+                                remark = '{remark}',
+                                STATUS= '{STATUS}',
+                                OUTPUT_PATH_2W = '{output_path}',
+                                OUTPUT_BY_2W = '{self.user_id}',
+                                OUTPUT_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_2W = '{cost_seconds}',
+                                TEST_POINT_2W = '{test_point}',
+                                LAST_UPDATE_DATE_2W = SYSDATE,
+                                LAST_UPDATED_BY_2W = '{self.user_id}',
+                                CHECK_BY_2W = '{self.user_id}',
+                                CHECK_START_2W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_2W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_2W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
                             """
                         else:
                             sql = f"""
-                            UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT
-                            SET remark='{remark}', DATA_PATH='{job_dir}', ATTRIBUTE8='{time_str}', ATTRIBUTE9='{cost_seconds}', 
-                            ATTRIBUTE10='{two_point}', ATTRIBUTE11='{four_point}', ATTRIBUTE16='{ATTRIBUTE16}'
-                            WHERE data_id={self.data_id}
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                WRITE_FLAG = 'Y',
+                                write_date = SYSDATE,
+                                write_by = 'sys_tem',
+                                remark = '{remark}',
+                                STATUS= '{STATUS}',
+                                OUTPUT_PATH_4W = '{output_path}',
+                                OUTPUT_BY_4W = '{self.user_id}',
+                                OUTPUT_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                OUTPUT_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_OUTPUT_MS_4W = '{cost_seconds}',
+                                TEST_POINT_4W = '{test_point}',
+                                LAST_UPDATE_DATE_4W = SYSDATE,
+                                LAST_UPDATED_BY_4W = '{self.user_id}',
+                                CHECK_BY_4W = '{self.user_id}',
+                                CHECK_START_4W = TO_DATE('{start_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                CHECK_FINISH_TIME_4W = TO_DATE('{end_time_str}','YYYY-MM-DD HH24:MI:SS'),
+                                TOTAL_CHECK_MS_4W = '{cost_seconds}'
+                            WHERE
+                                data_id = {self.data_id}
                             """
-                        self.db_erp.SQL_EXECUTE(sql)
-
-                        if not self.is_auto_mode():
-                            ATTRIBUTE16 = '未转换'
-                            if start_time:
-                                sql = f"""UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE12='{self.user_id}', ATTRIBUTE13='{time_str}' WHERE data_id={self.data_id}"""
-                            else:
-                                sql = f"""UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE14='{time_str}', ATTRIBUTE15='{cost_seconds}', ATTRIBUTE16='{ATTRIBUTE16}' WHERE data_id={self.data_id}"""
-                            self.db_erp.SQL_EXECUTE(sql)
-
+            logger.info(sql)
+            self.db_erp.SQL_EXECUTE(sql)
             logger.info("上报成功")
         except Exception as e:
             logger.error(f"上报失败：{e}")
