@@ -1727,7 +1727,7 @@ class FlyPinWindow(QMainWindow):
     # ==================== 原有任务管理方法（保持不变）====================
     def open_file_folder(self,mode='2w'):
         """点击按钮打开文件所在文件夹"""
-        path = self.current_file_path.strip()
+        path = (self.current_2w_file_path if mode == '2w' else self.current_4w_file_path).strip()
         if not path or not os.path.exists(path):
             QMessageBox.warning(self, "提示", "文件路径不存在或为空！")
             return
@@ -1889,7 +1889,7 @@ class FlyPinWindow(QMainWindow):
             ("输出人", 21),
             ("输出开始时间", 22),
             ("输出完成时间", 23),
-            ("输出总耗时", 27),
+            ("输出总耗时", 24),
             ("4W测试点数", 25),
             ("检查人", 26),
             ("检查开始时间", 27),
@@ -2193,7 +2193,6 @@ class FlyPinWindow(QMainWindow):
             cells = {
                 1:factory,
                 4:v(r.get("OPERATION_DESCRIPTION")),
-                6: v(self.user_name.get(r.get("STATUS"))),
                 7:v(r.get("REMARK")),
                 8:v(r.get("OUTPUT_PATH_2W")),
                 9:v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
