@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
                              QLabel, QMessageBox, QSpinBox, QHeaderView, QComboBox,
                              QDateEdit, QFrame, QScrollArea, QSizePolicy,
                              QDialog, QFormLayout, QDialogButtonBox,
-                             QStackedWidget, QFileDialog)
+                             QStackedWidget, QFileDialog, QTabWidget)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor, QIcon
 from PyQt5 import QtGui
@@ -317,6 +317,8 @@ class FlyPinWindow(QMainWindow):
         self.current_pn = ""
         self.current_status = ""
         self.current_test_point = ''
+        self.current_2w_test_point = ''
+        self.current_4w_test_point = ''
 
         # 报表相关
         self.report_data = []
@@ -569,13 +571,14 @@ class FlyPinWindow(QMainWindow):
 
         self.table = QTableWidget()
         self.table.setFont(GLOBAL_FONT)
-        self.headers = ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注", "操作",
-                        "输出路径", "输出人", "输出开始", "输出完成", "输出耗时", "2W", "4W", "检查人",
-                        "检查开始", "检查完成", "检查耗时"]
+        self.headers = ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+                        "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+                        "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+                        ]
         self.table.setColumnCount(len(self.headers))
         self.table.setHorizontalHeaderLabels(self.headers)
 
-        col_width = {0:75,1:85,2:140,3:60,4:110,5:140,6:80,7:200,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,18:0,19:0}
+        col_width = {0:75,1:85,2:140,3:60,4:110,5:140,6:80,7:200,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,18:0,19:0,20:0,21:0,22:0,23:0,24:0,25:0,26:0,27:0,28:0,29:0,30:0,31:0}
         hh = self.table.horizontalHeader()
         for c, w in col_width.items():
             hh.setSectionResizeMode(c, QHeaderView.Interactive)
@@ -650,53 +653,196 @@ class FlyPinWindow(QMainWindow):
         title_layout.addWidget(lab_title)
         detail_layout.addWidget(title_frame)
 
-        # 按钮栏
-        btn_frame = QFrame()
-        btn_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
-        btn_layout = QHBoxLayout(btn_frame)
-        btn_layout.setContentsMargins(12,10,12,10)
-        btn_layout.setSpacing(12)
-        self.btn_output = QPushButton("📤 输出")
-        self.btn_4w_out = QPushButton("📦 4W输出")
-        self.btn_check = QPushButton("📋 检查")
-        self.btn_input = QPushButton("📋 导入")
-        self.btn_convert = QPushButton("🔄 转换")
-        for btn in [self.btn_output, self.btn_4w_out, self.btn_check, self.btn_input,self.btn_convert]:
-            btn.setFixedSize(70,34)
-        self.btn_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_4w_out.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        self.btn_check.setStyleSheet(BUTTON_WARN_STYLE)
-        self.btn_input.setStyleSheet(BUTTON_WARN_STYLE)
-        self.btn_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
-        btn_layout.addWidget(self.btn_output)
-        btn_layout.addWidget(self.btn_check)
-        btn_layout.addWidget(self.btn_4w_out)
-        btn_layout.addWidget(self.btn_input)
-        btn_layout.addWidget(self.btn_convert)
-        detail_layout.addWidget(btn_frame)
+        # ===== Tab Widget: 2W资料 / 4W资料 =====
+        self.detail_tabs = QTabWidget()
+        self.detail_tabs.setStyleSheet(f"""
+            QTabWidget::pane {{
+                border: none;
+                background: {WHITE};
+            }}
+            QTabBar::tab {{
+                padding: 10px 24px;
+                font-family: 微软雅黑;
+                font-size: 10pt;
+                font-weight: bold;
+                color: {GRAY_TEXT_NORMAL};
+                background: {GRAY_LIGHT};
+                border: 1px solid {GRAY_BORDER};
+                border-bottom: 2px solid {GRAY_BORDER};
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+            }}
+            QTabBar::tab:selected {{
+                color: {PRIMARY_COLOR};
+                background: {WHITE};
+                border-bottom: 2px solid {PRIMARY_COLOR};
+            }}
+            QTabBar::tab:hover {{
+                color: {PRIMARY_COLOR};
+            }}
+        """)
 
-        # 滚动详情区
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setSpacing(6)
-        self.scroll_layout.setContentsMargins(12,12,12,12)
-        self.scroll_layout.setAlignment(Qt.AlignTop)
-        self.scroll_area.setWidget(self.scroll_content)
-        detail_layout.addWidget(self.scroll_area)
+        # ----- 2W资料 Tab -----
+        self.tab_2w = QWidget()
+        tab_2w_layout = QVBoxLayout(self.tab_2w)
+        tab_2w_layout.setContentsMargins(0, 0, 0, 0)
+        tab_2w_layout.setSpacing(0)
 
-        # 上传按钮栏
-        upload_frame = QFrame()
-        upload_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
-        upload_layout = QHBoxLayout(upload_frame)
-        upload_layout.setContentsMargins(12, 10, 12, 10)
-        upload_layout.setSpacing(12)
-        self.upload_data = QPushButton("📤 上传ERP")
-        self.upload_data.setFixedSize(300, 34)
-        self.upload_data.setStyleSheet(BUTTON_PRIMARY_STYLE)
-        upload_layout.addWidget(self.upload_data)
-        detail_layout.addWidget(upload_frame)
+        # 2W 按钮栏
+        btn_2w_frame = QFrame()
+        btn_2w_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
+        btn_2w_layout = QHBoxLayout(btn_2w_frame)
+        btn_2w_layout.setContentsMargins(12, 10, 12, 10)
+        btn_2w_layout.setSpacing(8)
+        self.btn_2w_output = QPushButton("📤 输出")
+        self.btn_2w_check = QPushButton("📋 检查")
+        self.btn_2w_input = QPushButton("📋 导入")
+        self.btn_2w_convert = QPushButton("🔄 转换")
+        for b in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert]:
+            b.setFixedSize(85, 34)
+        self.btn_2w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_2w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_2w_input.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_2w_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
+        btn_2w_layout.addWidget(self.btn_2w_output)
+        btn_2w_layout.addWidget(self.btn_2w_check)
+        btn_2w_layout.addWidget(self.btn_2w_input)
+        btn_2w_layout.addWidget(self.btn_2w_convert)
+        btn_2w_layout.addStretch()
+        tab_2w_layout.addWidget(btn_2w_frame)
+
+        # 2W 输出文件路径
+        path_2w_frame = QFrame()
+        path_2w_frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-bottom:1px solid {GRAY_BORDER};}}")
+        path_2w_layout = QHBoxLayout(path_2w_frame)
+        path_2w_layout.setContentsMargins(12, 8, 12, 8)
+        path_2w_layout.setSpacing(6)
+        lbl_2w_path = QLabel("输出文件路径：")
+        lbl_2w_path.setFont(BOLD_FONT)
+        lbl_2w_path.setStyleSheet(f"color:{GRAY_TEXT_NORMAL};")
+        self.lbl_2w_path_val = QLabel("未选择")
+        self.lbl_2w_path_val.setStyleSheet(f"color:{GRAY_TEXT_DARK};")
+        self.lbl_2w_path_val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_2w_path_val.setWordWrap(True)
+        self.btn_2w_open_path = QPushButton("📂")
+        self.btn_2w_open_path.setFixedSize(30, 26)
+        self.btn_2w_open_path.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        path_2w_layout.addWidget(lbl_2w_path)
+        path_2w_layout.addWidget(self.lbl_2w_path_val, stretch=1)
+        path_2w_layout.addWidget(self.btn_2w_open_path)
+        tab_2w_layout.addWidget(path_2w_frame)
+
+        # 2W 详情滚动区
+        self.scroll_2w = QScrollArea()
+        self.scroll_2w.setWidgetResizable(True)
+        self.scroll_content_2w = QWidget()
+        self.scroll_layout_2w = QVBoxLayout(self.scroll_content_2w)
+        self.scroll_layout_2w.setSpacing(6)
+        self.scroll_layout_2w.setContentsMargins(12, 12, 12, 12)
+        self.scroll_layout_2w.setAlignment(Qt.AlignTop)
+        self.scroll_2w.setWidget(self.scroll_content_2w)
+        tab_2w_layout.addWidget(self.scroll_2w, stretch=1)
+
+        # 2W 上传ERP按钮
+        upload_2w_frame = QFrame()
+        upload_2w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        upload_2w_layout = QHBoxLayout(upload_2w_frame)
+        upload_2w_layout.setContentsMargins(12, 10, 12, 10)
+        self.btn_2w_upload = QPushButton("📤 上传ERP")
+        self.btn_2w_upload.setFixedHeight(34)
+        self.btn_2w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        upload_2w_layout.addWidget(self.btn_2w_upload)
+        # tab_2w_layout.addWidget(upload_2w_frame)
+        detail_layout.addWidget(upload_2w_frame)
+
+        self.detail_tabs.addTab(self.tab_2w, "🔹 2W资料")
+
+        # ----- 4W资料 Tab -----
+        self.tab_4w = QWidget()
+        tab_4w_layout = QVBoxLayout(self.tab_4w)
+        tab_4w_layout.setContentsMargins(0, 0, 0, 0)
+        tab_4w_layout.setSpacing(0)
+
+        # 4W 按钮栏
+        btn_4w_frame = QFrame()
+        btn_4w_frame.setStyleSheet(f"QFrame{{border-bottom:1px solid {GRAY_BORDER};}}")
+        btn_4w_layout = QHBoxLayout(btn_4w_frame)
+        btn_4w_layout.setContentsMargins(12, 10, 12, 10)
+        btn_4w_layout.setSpacing(8)
+        self.btn_4w_output = QPushButton("📤 输出")
+        self.btn_4w_check = QPushButton("📋 检查")
+        self.btn_4w_input = QPushButton("📋 导入")
+        self.btn_4w_convert = QPushButton("🔄 转换")
+        for b in [self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert]:
+            b.setFixedSize(85, 34)
+        self.btn_4w_output.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        self.btn_4w_check.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_4w_input.setStyleSheet(BUTTON_WARN_STYLE)
+        self.btn_4w_convert.setStyleSheet(BUTTON_SUCCESS_STYLE)
+        btn_4w_layout.addWidget(self.btn_4w_output)
+        btn_4w_layout.addWidget(self.btn_4w_check)
+        btn_4w_layout.addWidget(self.btn_4w_input)
+        btn_4w_layout.addWidget(self.btn_4w_convert)
+        btn_4w_layout.addStretch()
+        tab_4w_layout.addWidget(btn_4w_frame)
+
+        # 4W 输出文件路径
+        path_4w_frame = QFrame()
+        path_4w_frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-bottom:1px solid {GRAY_BORDER};}}")
+        path_4w_layout = QHBoxLayout(path_4w_frame)
+        path_4w_layout.setContentsMargins(12, 8, 12, 8)
+        path_4w_layout.setSpacing(6)
+        lbl_4w_path = QLabel("输出文件路径：")
+        lbl_4w_path.setFont(BOLD_FONT)
+        lbl_4w_path.setStyleSheet(f"color:{GRAY_TEXT_NORMAL};")
+        self.lbl_4w_path_val = QLabel("未选择")
+        self.lbl_4w_path_val.setStyleSheet(f"color:{GRAY_TEXT_DARK};")
+        self.lbl_4w_path_val.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.lbl_4w_path_val.setWordWrap(True)
+        self.btn_4w_open_path = QPushButton("📂")
+        self.btn_4w_open_path.setFixedSize(30, 26)
+        self.btn_4w_open_path.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        path_4w_layout.addWidget(lbl_4w_path)
+        path_4w_layout.addWidget(self.lbl_4w_path_val, stretch=1)
+        path_4w_layout.addWidget(self.btn_4w_open_path)
+        tab_4w_layout.addWidget(path_4w_frame)
+
+        # 4W 详情滚动区
+        self.scroll_4w = QScrollArea()
+        self.scroll_4w.setWidgetResizable(True)
+        self.scroll_content_4w = QWidget()
+        self.scroll_layout_4w = QVBoxLayout(self.scroll_content_4w)
+        self.scroll_layout_4w.setSpacing(6)
+        self.scroll_layout_4w.setContentsMargins(12, 12, 12, 12)
+        self.scroll_layout_4w.setAlignment(Qt.AlignTop)
+        self.scroll_4w.setWidget(self.scroll_content_4w)
+        tab_4w_layout.addWidget(self.scroll_4w, stretch=1)
+
+        # # 4W 上传ERP按钮
+        # upload_4w_frame = QFrame()
+        # upload_4w_frame.setStyleSheet(f"QFrame{{border-top:1px solid {GRAY_BORDER};}}")
+        # upload_4w_layout = QHBoxLayout(upload_4w_frame)
+        # upload_4w_layout.setContentsMargins(12, 10, 12, 10)
+        # self.btn_4w_upload = QPushButton("📤 上传ERP")
+        # self.btn_4w_upload.setFixedHeight(34)
+        # self.btn_4w_upload.setStyleSheet(BUTTON_PRIMARY_STYLE)
+        # upload_4w_layout.addWidget(self.btn_4w_upload)
+        # tab_4w_layout.addWidget(upload_4w_frame)
+
+        self.detail_tabs.addTab(self.tab_4w, "🔸 4W资料")
+
+        detail_layout.addWidget(self.detail_tabs, stretch=1)
+
+        # 保持兼容：旧引用指向新控件
+        self.btn_output = self.btn_2w_output
+        self.btn_4w_out = self.btn_4w_output
+        self.btn_check = self.btn_2w_check
+        self.btn_input = self.btn_2w_input
+        self.btn_convert = self.btn_2w_convert
+        self.scroll_area = self.scroll_2w
+        self.scroll_layout = self.scroll_layout_2w
+        self.upload_data = self.btn_2w_upload
+        self.scroll_content = self.scroll_content_2w
 
         content_layout.addWidget(detail_frame, stretch=30)
         layout.addLayout(content_layout)
@@ -724,12 +870,18 @@ class FlyPinWindow(QMainWindow):
         self.cb_status.currentTextChanged.connect(self.do_search)
         self.cb_operation.currentTextChanged.connect(self.do_search)
 
-        self.btn_output.clicked.connect(self.do_make)
-        self.btn_4w_out.clicked.connect(self.do_4w_out)
-        self.btn_check.clicked.connect(self.do_check)
-        self.btn_input.clicked.connect(self.do_input)
-        self.btn_convert.clicked.connect(self.do_convert)
-        self.upload_data.clicked.connect(self.do_upload)
+        self.btn_2w_output.clicked.connect(self.do_2w_make)
+        self.btn_2w_check.clicked.connect(self.do_2w_check)
+        self.btn_2w_input.clicked.connect(self.do_input)
+        self.btn_2w_convert.clicked.connect(self.do_convert)
+        self.btn_4w_output.clicked.connect(self.do_4w_out)
+        self.btn_4w_check.clicked.connect(self.do_4w_check)
+        self.btn_4w_input.clicked.connect(self.do_input)
+        self.btn_4w_convert.clicked.connect(self.do_convert)
+        self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
+        # self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
+        self.btn_2w_open_path.clicked.connect(lambda: self.open_file_folder('2w'))
+        self.btn_4w_open_path.clicked.connect(lambda: self.open_file_folder('4w'))
 
         return page
 
@@ -901,14 +1053,20 @@ class FlyPinWindow(QMainWindow):
         self.report_detail_table.setFont(GLOBAL_FONT)
         self.report_detail_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
-                               "2W点数", "4W点数", "输出人", "输出完成",
-                               "输出耗时", "检查人", "检查完成", "检查耗时"]
+                        "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+                        "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+                        ]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
         rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 140, 6: 180, 7: 70, 8: 70,
-                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75}
+                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75,
+                         15: 75, 16: 140, 17: 75, 18: 75, 19: 140, 20: 75,
+                         21: 75, 22: 140, 23: 75, 24: 75, 25: 140, 26: 75,
+                         27: 75, 28: 140, 29: 75, 30: 75
+                         }
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
+        self.report_detail_table.horizontalHeader().setStretchLastSection(True)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
         self.report_detail_table.setWordWrap(False)
         self.report_detail_table.verticalHeader().setVisible(True)
@@ -1060,14 +1218,43 @@ class FlyPinWindow(QMainWindow):
 
             where_sql = " AND ".join(where_clauses)
 
-            sql = f"""SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
-                       us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
-                       us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
-                       us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-                       us.ATTRIBUTE14,us.ATTRIBUTE15
-                FROM inp.inp_flypin_probe_tool_alert us
-                WHERE {where_sql}
-                ORDER BY us.CREATION_DATE DESC"""
+            sql = f"""
+            SELECT 
+                US.DATA_ID,
+                US.ITEM_NO,
+                US.REV,
+                US.ORG_ID,
+                US.CREATION_DATE,
+                US.STATUS,
+                US.REMARK ,
+                US.OUTPUT_PATH_2W,
+                US.OUTPUT_BY_2W,
+                US.OUTPUT_START_2W,
+                US.OUTPUT_FINISH_TIME_2W,
+                US.TOTAL_OUTPUT_MS_2W,
+                US.TEST_POINT_2W,
+                US.CHECK_BY_2W,
+                US.CHECK_START_2W,
+                US.CHECK_FINISH_TIME_2W,
+                US.TOTAL_CHECK_MS_2W,
+                US.LAST_UPDATE_DATE_2W,
+                US.LAST_UPDATED_BY_2W,
+                US.OUTPUT_PATH_4W,
+                US.OUTPUT_BY_4W,
+                US.OUTPUT_START_4W,
+                US.OUTPUT_FINISH_TIME_4W,
+                US.TOTAL_OUTPUT_MS_4W,
+                US.TEST_POINT_4W,
+                US.CHECK_BY_4W,
+                US.CHECK_START_4W,
+                US.CHECK_FINISH_TIME_4W,
+                US.TOTAL_CHECK_MS_4W,
+                US.LAST_UPDATE_DATE_4W,
+                US.LAST_UPDATED_BY_4W
+            FROM 
+                inp.inp_flypin_probe_tool_alert us
+            WHERE {where_sql}
+            ORDER BY us.CREATION_DATE DESC"""
 
             db = self.init_erp_database_connection()
             raw = db.SELECT_DIC(sql) if db else []
@@ -1075,7 +1262,7 @@ class FlyPinWindow(QMainWindow):
             if status_text != "全部状态":
                 self.report_data = [
                     r for r in raw
-                    if self.get_work_status(r.get("ATTRIBUTE16")) == status_text
+                    if self.get_work_status(r.get("STATUS")) == status_text
                 ]
             else:
                 self.report_data = raw
@@ -1089,7 +1276,7 @@ class FlyPinWindow(QMainWindow):
                 output_id = self.user_name_id.get(output_user, output_user)
                 self.report_data = [
                     r for r in self.report_data
-                    if str(r.get("ATTRIBUTE6") or "") == output_id
+                    if str(r.get("OUTPUT_BY_2W") or "") == output_id
                 ]
 
             # 检查人筛选
@@ -1098,7 +1285,7 @@ class FlyPinWindow(QMainWindow):
                 check_id = self.user_name_id.get(check_user, check_user)
                 self.report_data = [
                     r for r in self.report_data
-                    if str(r.get("ATTRIBUTE12") or "") == check_id
+                    if str(r.get("CHECK_BY_2W") or "") == check_id
                 ]
 
         except Exception as e:
@@ -1132,10 +1319,10 @@ class FlyPinWindow(QMainWindow):
         user_name = self.user_name
         for r in self.report_data:
             def _v(x): return str(x) if x else ""
-            ou = _v(r.get("ATTRIBUTE6"))
+            ou = _v(r.get("OUTPUT_BY_2W"))
             if ou:
                 output_users.add(user_name.get(ou, ou))
-            cu = _v(r.get("ATTRIBUTE12"))
+            cu = _v(r.get("CHECK_BY_2W"))
             if cu:
                 check_users.add(user_name.get(cu, cu))
 
@@ -1185,7 +1372,7 @@ class FlyPinWindow(QMainWindow):
                 }
             fm = cache['factory_summary'][factory]
             fm["total"] += 1
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 fm["completed"] += 1
             elif status in ("未转换", "未检查"):
@@ -1195,14 +1382,14 @@ class FlyPinWindow(QMainWindow):
             if status == "已转换":
                 fm["converted"] += 1
             try:
-                fm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                fm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+                fm["2w"] += int(r.get("TEST_POINT_2W") or 0)
+                fm["4w"] += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            t_out = self._parse_output_time(r.get("ATTRIBUTE9"))
+            t_out = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
             if t_out > 0:
                 fm["times"].append(t_out)
-            op = user_name.get(_v(r.get("ATTRIBUTE6")), "")
+            op = user_name.get(_v(r.get("OUTPUT_BY_2W")), "")
             if op:
                 fm["operators"][op] += 1
 
@@ -1218,7 +1405,7 @@ class FlyPinWindow(QMainWindow):
                 }
             dm = cache['daily_stats'][date_str]
             dm["total"] += 1
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 dm["completed"] += 1
             elif status in ("未转换", "未检查"):
@@ -1226,11 +1413,11 @@ class FlyPinWindow(QMainWindow):
             elif status in ("未运行", "未输出"):
                 dm["not_run"] += 1
             try:
-                dm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                dm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+                dm["2w"] += int(r.get("TEST_POINT_2W") or 0)
+                dm["4w"] += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            op = _v(r.get("ATTRIBUTE6"))
+            op = _v(r.get("OUTPUT_BY_2W"))
             if op:
                 dm["users"].add(op)
 
@@ -1249,7 +1436,7 @@ class FlyPinWindow(QMainWindow):
         get_status = self.get_work_status
 
         for r in self.report_data:
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 completed += 1
             elif status in ("未转换", "未检查"):
@@ -1257,11 +1444,11 @@ class FlyPinWindow(QMainWindow):
             elif status in ("未运行", "未输出"):
                 not_run += 1
             try:
-                total_2w += int(r.get("ATTRIBUTE10") or 0)
-                total_4w += int(r.get("ATTRIBUTE11") or 0)
+                total_2w += int(r.get("TEST_POINT_2W") or 0)
+                total_4w += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            t = self._parse_output_time(r.get("ATTRIBUTE9"))
+            t = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
             if t > 0:
                 total_time += t
                 time_count += 1
@@ -1313,7 +1500,7 @@ class FlyPinWindow(QMainWindow):
 
             org = str(r.get("ORG_ID") or "")
             factory = FACTORY_ID_TO_NAME.get(org, org)
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
 
             remark = str(r.get("REMARK") or "")
             # 截断过长备注
@@ -1321,21 +1508,37 @@ class FlyPinWindow(QMainWindow):
                 remark = remark[:57] + "..."
 
             items_data = [
-                str(s + i + 1),
-                factory,
-                str(r.get("ITEM_NO") or ""),
-                str(r.get("REV") or ""),
-                status,
-                str(r.get("CREATION_DATE") or ""),
-                remark,
-                str(r.get("ATTRIBUTE10") or ""),
-                str(r.get("ATTRIBUTE11") or ""),
-                user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                str(r.get("ATTRIBUTE8") or ""),
-                str(r.get("ATTRIBUTE9") or ""),
-                user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                str(r.get("ATTRIBUTE14") or ""),
-                str(r.get("ATTRIBUTE15") or ""),
+                str(s + i + 1),                                              # 0  序号
+                factory,                                                     # 1  厂区
+                str(r.get("ITEM_NO") or ""),                                # 2  料号
+                str(r.get("REV") or ""),                                    # 3  版本
+                status,                                                      # 4  状态
+                str(r.get("CREATION_DATE") or ""),                           # 5  创建时间
+                remark,                                                      # 6  备注
+                str(r.get("OUTPUT_PATH_2W") or ""),                          # 7  2W输出路径
+                user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),         # 8  2W输出人
+                str(r.get("OUTPUT_START_2W") or ""),                         # 9  2W输出开始时间
+                str(r.get("OUTPUT_FINISH_TIME_2W") or ""),                   # 10 2W输出完成时间
+                str(r.get("TOTAL_OUTPUT_MS_2W") or ""),                      # 11 2W输出总耗时
+                str(r.get("TEST_POINT_2W") or ""),                           # 12 2W测试点
+                user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),          # 13 2W检查人
+                str(r.get("CHECK_START_2W") or ""),                          # 14 2W检查开始时间
+                str(r.get("CHECK_FINISH_TIME_2W") or ""),                    # 15 2W检查完成时间
+                str(r.get("TOTAL_CHECK_MS_2W") or ""),                       # 16 2W检查总耗时
+                str(r.get("LAST_UPDATE_DATE_2W") or ""),                     # 17 2W最后更新时间
+                user_name.get(str(r.get("LAST_UPDATED_BY_2W") or ""), ""),   # 18 2W最后更新人
+                str(r.get("OUTPUT_PATH_4W") or ""),                          # 19 4W输出路径
+                user_name.get(str(r.get("OUTPUT_BY_4W") or ""), ""),         # 20 4W输出人
+                str(r.get("OUTPUT_START_4W") or ""),                         # 21 4W输出开始时间
+                str(r.get("OUTPUT_FINISH_TIME_4W") or ""),                   # 22 4W输出完成时间
+                str(r.get("TOTAL_OUTPUT_MS_4W") or ""),                      # 23 4W输出总耗时
+                str(r.get("TEST_POINT_4W") or ""),                           # 24 4W测试点
+                user_name.get(str(r.get("CHECK_BY_4W") or ""), ""),          # 25 4W检查人
+                str(r.get("CHECK_START_4W") or ""),                          # 26 4W检查开始时间
+                str(r.get("CHECK_FINISH_TIME_4W") or ""),                    # 27 4W检查完成时间
+                str(r.get("TOTAL_CHECK_MS_4W") or ""),                       # 28 4W检查总耗时
+                str(r.get("LAST_UPDATE_DATE_4W") or ""),                     # 29 4W最后更新时间
+                user_name.get(str(r.get("LAST_UPDATED_BY_4W") or ""), ""),   # 30 4W最后更新人
             ]
 
             for col, txt in enumerate(items_data):
@@ -1347,6 +1550,8 @@ class FlyPinWindow(QMainWindow):
             st_item = table.item(i, 4)
             if st_item:
                 st_item.setForeground(status_color(status))
+
+        table.resizeColumnsToContents()
 
     def _render_factory_summary(self):
         """工厂汇总 - 从缓存渲染"""
@@ -1472,18 +1677,35 @@ class FlyPinWindow(QMainWindow):
                     for r in self.report_data:
                         org = str(r.get("ORG_ID") or "")
                         factory = FACTORY_ID_TO_NAME.get(org, org)
-                        status = self.get_work_status(r.get("ATTRIBUTE16"))
+                        status = self.get_work_status(r.get("STATUS"))
                         writer.writerow([
                             factory, str(r.get("ITEM_NO") or ""), str(r.get("REV") or ""),
                             status, str(r.get("CREATION_DATE") or ""),
                             str(r.get("REMARK") or ""),
-                            str(r.get("ATTRIBUTE10") or ""), str(r.get("ATTRIBUTE11") or ""),
-                            self.user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                            str(r.get("ATTRIBUTE8") or ""),
-                            str(r.get("ATTRIBUTE9") or ""),
-                            self.user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                            str(r.get("ATTRIBUTE14") or ""),
-                            str(r.get("ATTRIBUTE15") or ""),
+                            str(r.get("OUTPUT_PATH_2W") or ""),
+                            self.user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),
+                            str(r.get("OUTPUT_START_2W") or ""),
+                            str(r.get("OUTPUT_FINISH_TIME_2W") or ""),
+                            str(r.get("TOTAL_OUTPUT_MS_2W") or ""),
+                            str(r.get("TEST_POINT_2W") or ""),
+                            self.user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),
+                            str(r.get("CHECK_START_2W") or ""),
+                            str(r.get("CHECK_FINISH_TIME_2W") or ""),
+                            str(r.get("TOTAL_CHECK_MS_2W") or ""),
+                            str(r.get("LAST_UPDATE_DATE_2W") or ""),
+                            self.user_name.get(str(r.get("LAST_UPDATED_BY_2W") or ""), ""),
+                            str(r.get("OUTPUT_PATH_4W") or ""),
+                            self.user_name.get(str(r.get("OUTPUT_BY_4W") or ""), ""),
+                            str(r.get("OUTPUT_START_4W") or ""),
+                            str(r.get("OUTPUT_FINISH_TIME_4W") or ""),
+                            str(r.get("TOTAL_OUTPUT_MS_4W") or ""),
+                            str(r.get("TEST_POINT_4W") or ""),
+                            self.user_name.get(str(r.get("CHECK_BY_4W") or ""), ""),
+                            str(r.get("CHECK_START_4W") or ""),
+                            str(r.get("CHECK_FINISH_TIME_4W") or ""),
+                            str(r.get("TOTAL_CHECK_MS_4W") or ""),
+                            str(r.get("LAST_UPDATE_DATE_4W") or ""),
+                            self.user_name.get(str(r.get("LAST_UPDATED_BY_4W") or ""), ""),
                         ])
                 QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
             except Exception as e:
@@ -1539,9 +1761,9 @@ class FlyPinWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
     # ==================== 原有任务管理方法（保持不变）====================
-    def open_file_folder(self):
+    def open_file_folder(self,mode='2w'):
         """点击按钮打开文件所在文件夹"""
-        path = self.current_file_path.strip()
+        path = (self.current_2w_file_path if mode == '2w' else self.current_4w_file_path).strip()
         if not path or not os.path.exists(path):
             QMessageBox.warning(self, "提示", "文件路径不存在或为空！")
             return
@@ -1554,25 +1776,30 @@ class FlyPinWindow(QMainWindow):
                 os.startfile(folder_path)
 
     def update_detail(self):
-        # 清空原有详情
-        while self.scroll_layout.count() > 0:
-            item = self.scroll_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+        # 清空原有详情（2W和4W）
+        for layout in [self.scroll_layout_2w, self.scroll_layout_4w]:
+            while layout.count() > 0:
+                item = layout.takeAt(0)
+                w = item.widget()
+                if w:
+                    w.deleteLater()
 
         items = self.table.selectedItems()
         if not items:
-            self.btn_output.setEnabled(False)
-            self.btn_check.setEnabled(False)
-            self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            for btn in [self.btn_2w_output, self.btn_2w_check, self.btn_2w_input, self.btn_2w_convert,
+                        self.btn_4w_output, self.btn_4w_check, self.btn_4w_input, self.btn_4w_convert,
+                        self.btn_2w_upload]:
+                btn.setEnabled(False)
+            self.lbl_2w_path_val.setText("未选择")
+            self.lbl_4w_path_val.setText("未选择")
             tip_label = QLabel("请在左侧表格选择一行数据查看详情")
             tip_label.setAlignment(Qt.AlignCenter)
             tip_label.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};font-size:10pt;padding:40px 0;")
-            self.scroll_layout.addWidget(tip_label)
+            self.scroll_layout_2w.addWidget(tip_label)
+            tip_label2 = QLabel("请在左侧表格选择一行数据查看详情")
+            tip_label2.setAlignment(Qt.AlignCenter)
+            tip_label2.setStyleSheet(f"color:{GRAY_TEXT_LIGHT};font-size:10pt;padding:40px 0;")
+            self.scroll_layout_4w.addWidget(tip_label2)
             return
 
         row_idx = items[0].row()
@@ -1588,47 +1815,129 @@ class FlyPinWindow(QMainWindow):
         rev = get_cell(3)
         self.current_pn = f"{item_no}{rev}"
         self.current_status = get_cell(6)
-        self.current_file_path = get_cell(9)
-        self.current_test_point = get_cell(14)
+        self.current_2w_file_path = get_cell(8)
+        self.current_4w_file_path = get_cell(20)
+        self.current_2w_test_point = get_cell(13)
+        self.current_4w_test_point = get_cell(25)
+        # 保留兼容
+        self.current_test_point = self.current_2w_test_point
 
-        self.btn_output.setEnabled(True)
-        self.btn_check.setEnabled(True)
-        self.btn_convert.setEnabled(True)
-        self.btn_4w_out.setEnabled(True)
-        self.btn_input.setEnabled(True)
-        self.upload_data.setEnabled(True)
+        # ===== 2W 按钮状态 =====
+        self.btn_2w_output.setEnabled(True)
+        self.btn_2w_check.setEnabled(True)
+        self.btn_2w_input.setEnabled(True)
+        self.btn_2w_convert.setEnabled(True)
+        self.btn_2w_upload.setEnabled(True)
         if self.current_status in ["未运行", "未输出"]:
-            self.btn_check.setEnabled(False)
-            self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_convert.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
         elif self.current_status == "未检查":
-            self.btn_convert.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.btn_input.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_2w_convert.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
         elif self.current_status == "未转换":
-            self.btn_check.setEnabled(False)
-            self.btn_4w_out.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
         elif self.current_status == "已完成":
-            self.btn_check.setEnabled(False)
-            self.upload_data.setEnabled(False)
+            self.btn_2w_check.setEnabled(False)
+            self.btn_2w_input.setEnabled(False)
+            self.btn_2w_upload.setEnabled(False)
 
-        detail_list = [
-            ("输出文件路径", 9),
-            ("输出人", 10),
-            ("输出开始时间", 11),
-            ("输出完成时间", 12),
-            ("输出总耗时", 13),
-            ("2W测试点数", 14),
-            ("4W测试点数", 15),
-            ("检查人", 16),
-            ("检查开始时间", 17),
-            ("检查完成时间", 18),
-            ("检查总耗时", 19)
+        # ===== 4W 按钮状态 =====
+        self.btn_4w_output.setEnabled(True)
+        self.btn_4w_check.setEnabled(True)
+        self.btn_4w_input.setEnabled(True)
+        self.btn_4w_convert.setEnabled(True)
+        # self.btn_4w_upload.setEnabled(True)
+        if self.current_status in ["未运行", "未输出"]:
+            # self.btn_4w_output.setEnabled(False)
+            self.btn_4w_check.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
+            self.btn_4w_convert.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "未检查":
+            # self.btn_4w_output.setEnabled(False)
+            self.btn_4w_convert.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "未转换":
+            self.btn_4w_check.setEnabled(True)
+            self.btn_4w_input.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
+        elif self.current_status == "已完成":
+            # self.btn_4w_output.setEnabled(False)
+            self.btn_4w_check.setEnabled(False)
+            self.btn_4w_input.setEnabled(False)
+            # self.btn_4w_upload.setEnabled(False)
+
+        # ===== 更新路径标签 =====
+        self.lbl_2w_path_val.setText(self.current_2w_file_path if self.current_2w_file_path else "无")
+        self.lbl_4w_path_val.setText(self.current_4w_file_path if self.current_4w_file_path else "无")
+
+        """
+        8: v(r.get("OUTPUT_PATH_2W")),
+        9: v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+        10: v(r.get("OUTPUT_START_2W")),
+        11: v(r.get("OUTPUT_FINISH_TIME_2W")),
+        12: v(r.get("TOTAL_OUTPUT_MS_2W")),
+        13: v(r.get("TEST_POINT_2W")),
+        14: v(self.user_name.get(r.get("CHECK_BY_2W"))),
+        15: v(r.get("CHECK_START_2W")),
+        16: v(r.get("CHECK_FINISH_TIME_2W")),
+        17: v(r.get("TOTAL_CHECK_MS_2W")),
+        18: v(r.get("LAST_UPDATE_DATE_2W")),
+        19: v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+        20: v(r.get("OUTPUT_PATH_4W")),
+        21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+        22: v(r.get("OUTPUT_START_4W")),
+        23: v(r.get("OUTPUT_FINISH_TIME_4W")),
+        24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+        25: v(r.get("TEST_POINT_4W")),
+        26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+        27: v(r.get("CHECK_START_4W")),
+        28: v(r.get("CHECK_FINISH_TIME_4W")),
+        29: v(r.get("TOTAL_CHECK_MS_4W")),
+        30: v(r.get("LAST_UPDATE_DATE_4W")),
+        31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
+        """
+
+        # ===== 2W Tab 详情 =====
+        detail_2w = [
+            ("输出人", 9),
+            ("输出开始时间", 10),
+            ("输出完成时间", 11),
+            ("输出总耗时", 12),
+            ("2W测试点数", 13),
+            ("检查人", 14),
+            ("检查开始时间", 15),
+            ("检查完成时间", 16),
+            ("检查总耗时", 17),
+            ("最后更新时间", 18),
+            ("最后更新人", 19)
         ]
+        self._populate_detail_layout(self.scroll_layout_2w, detail_2w, get_cell)
+
+        # ===== 4W Tab 详情 =====
+        detail_4w = [
+            ("输出人", 21),
+            ("输出开始时间", 22),
+            ("输出完成时间", 23),
+            ("输出总耗时", 24),
+            ("4W测试点数", 25),
+            ("检查人", 26),
+            ("检查开始时间", 27),
+            ("检查完成时间", 28),
+            ("检查总耗时", 29),
+            ("最后更新时间", 30),
+            ("最后更新人", 31)
+        ]
+        self._populate_detail_layout(self.scroll_layout_4w, detail_4w, get_cell)
+
+    def _populate_detail_layout(self, layout, detail_list, get_cell_fn):
+        """填充详情信息到指定的 layout"""
         for title, col in detail_list:
             frame = QFrame()
             frame.setStyleSheet(f"QFrame{{background:{GRAY_CARD};border-radius:6px;border:1px solid {GRAY_BORDER};}}")
@@ -1636,23 +1945,15 @@ class FlyPinWindow(QMainWindow):
             hly.setContentsMargins(10, 8, 10, 8)
             lab_name = QLabel(f"{title}：")
             lab_name.setFont(BOLD_FONT)
-            lab_name.setFixedWidth(120)
+            lab_name.setFixedWidth(110)
             lab_name.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            val_txt = get_cell(col)
+            val_txt = get_cell_fn(col)
             val_label = QLabel(val_txt if val_txt else "无")
             val_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             val_label.setWordWrap(True)
             hly.addWidget(lab_name)
             hly.addWidget(val_label)
-
-            if title == "输出文件路径" and val_txt:
-                path_btn = QPushButton("📂")
-                path_btn.setFixedSize(30, 26)
-                path_btn.setStyleSheet(BUTTON_PRIMARY_STYLE)
-                path_btn.clicked.connect(lambda: self.open_file_folder())
-                hly.addWidget(path_btn)
-
-            self.scroll_layout.addWidget(frame)
+            layout.addWidget(frame)
 
     def get_work_status(self, val):
         return str(val).strip() if val else "未运行"
@@ -1678,10 +1979,42 @@ class FlyPinWindow(QMainWindow):
             fid = FACTORY_MAP[self.cb_factory.currentText()]
             sd = self.date_start.date().toString("yyyy-MM-dd")
             ed = self.date_end.date().toString("yyyy-MM-dd")
-            sql = f"""SELECT * FROM (SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
-            us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-            us.ATTRIBUTE14,us.ATTRIBUTE15,A.OPERATION_DESCRIPTION,
-            ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN
+            sql = f"""
+            SELECT * FROM (
+                SELECT 
+                    US.DATA_ID,
+                    US.ITEM_NO,
+                    US.REV,
+                    US.ORG_ID,
+                    US.CREATION_DATE,
+                    US.STATUS,
+                    US.REMARK ,
+                    US.OUTPUT_PATH_2W,
+                    US.OUTPUT_BY_2W,
+                    US.OUTPUT_START_2W,
+                    US.OUTPUT_FINISH_TIME_2W,
+                    US.TOTAL_OUTPUT_MS_2W,
+                    US.TEST_POINT_2W,
+                    US.CHECK_BY_2W,
+                    US.CHECK_START_2W,
+                    US.CHECK_FINISH_TIME_2W,
+                    US.TOTAL_CHECK_MS_2W,
+                    US.LAST_UPDATE_DATE_2W,
+                    US.LAST_UPDATED_BY_2W,
+                    US.OUTPUT_PATH_4W,
+                    US.OUTPUT_BY_4W,
+                    US.OUTPUT_START_4W,
+                    US.OUTPUT_FINISH_TIME_4W,
+                    US.TOTAL_OUTPUT_MS_4W,
+                    US.TEST_POINT_4W,
+                    US.CHECK_BY_4W,
+                    US.CHECK_START_4W,
+                    US.CHECK_FINISH_TIME_4W,
+                    US.TOTAL_CHECK_MS_4W,
+                    US.LAST_UPDATE_DATE_4W,
+                    US.LAST_UPDATED_BY_4W,
+                    A.OPERATION_DESCRIPTION,
+                    ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN
             FROM inp.inp_flypin_probe_tool_alert us
             JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO
             WHERE US.OPERATON_CLASSCODE='ET_DATA' AND US.ORG_ID='{fid}'
@@ -1701,7 +2034,7 @@ class FlyPinWindow(QMainWindow):
             sop = str(r.get("OPERATION_DESCRIPTION","")).strip()
             ops.add(sop)
             if kw and kw not in str(r.get("ITEM_NO","")).lower(): continue
-            s = self.get_work_status(r.get("ATTRIBUTE16"))
+            s = self.get_work_status(r.get("STATUS"))
             if st != "全部状态" and s != st: continue
             if op != "全部工序" and sop != op: continue
             res.append(r)
@@ -1740,14 +2073,54 @@ class FlyPinWindow(QMainWindow):
             op_desc = v(r.get("OPERATION_DESCRIPTION"))
             ctime = v(r.get("CREATION_DATE"))
             remark = v(r.get("REMARK"))
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            status = self.get_work_status(r.get("STATUS"))
 
+            # item_map = {
+            #     0:did,1:factory,2:item,3:rev,4:op_desc,5:ctime,7:remark,
+            #     9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),
+            #     12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),
+            #     15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),
+            #     18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))
+            # }
+
+            """
+            ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+            "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+            "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+            ]
+            """
             item_map = {
-                0:did,1:factory,2:item,3:rev,4:op_desc,5:ctime,7:remark,
-                9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),
-                12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),
-                15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),
-                18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))
+                0:did,
+                1:factory,
+                2:item,
+                3:rev,
+                4:op_desc,
+                5:ctime,
+                7: remark,
+                8: v(r.get("OUTPUT_PATH_2W")),
+                9: v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+                10: v(r.get("OUTPUT_START_2W")),
+                11: v(r.get("OUTPUT_FINISH_TIME_2W")),
+                12: v(r.get("TOTAL_OUTPUT_MS_2W")),
+                13: v(r.get("TEST_POINT_2W")),
+                14: v(self.user_name.get(r.get("CHECK_BY_2W"))),
+                15: v(r.get("CHECK_START_2W")),
+                16: v(r.get("CHECK_FINISH_TIME_2W")),
+                17: v(r.get("TOTAL_CHECK_MS_2W")),
+                18: v(r.get("LAST_UPDATE_DATE_2W")),
+                19: v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+                20: v(r.get("OUTPUT_PATH_4W")),
+                21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+                22: v(r.get("OUTPUT_START_4W")),
+                23: v(r.get("OUTPUT_FINISH_TIME_4W")),
+                24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+                25: v(r.get("TEST_POINT_4W")),
+                26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+                27: v(r.get("CHECK_START_4W")),
+                28: v(r.get("CHECK_FINISH_TIME_4W")),
+                29: v(r.get("TOTAL_CHECK_MS_4W")),
+                30: v(r.get("LAST_UPDATE_DATE_4W")),
+                31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
             }
             for col, txt in item_map.items():
                 cell = QTableWidgetItem(txt)
@@ -1790,7 +2163,46 @@ class FlyPinWindow(QMainWindow):
 
     def update_single_row(self, did):
         try:
-            sql = f"SELECT * FROM (SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,us.ATTRIBUTE14,us.ATTRIBUTE15,A.OPERATION_DESCRIPTION,ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN FROM inp.inp_flypin_probe_tool_alert us JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO WHERE US.DATA_ID='{did}') WHERE RN=1"
+            sql = f"""
+            SELECT * FROM (
+                SELECT 
+                    US.DATA_ID,
+                    US.ITEM_NO,
+                    US.REV,
+                    US.ORG_ID,
+                    US.CREATION_DATE,
+                    US.STATUS,
+                    US.REMARK ,
+                    US.OUTPUT_PATH_2W,
+                    US.OUTPUT_BY_2W,
+                    US.OUTPUT_START_2W,
+                    US.OUTPUT_FINISH_TIME_2W,
+                    US.TOTAL_OUTPUT_MS_2W,
+                    US.TEST_POINT_2W,
+                    US.CHECK_BY_2W,
+                    US.CHECK_START_2W,
+                    US.CHECK_FINISH_TIME_2W,
+                    US.TOTAL_CHECK_MS_2W,
+                    US.LAST_UPDATE_DATE_2W,
+                    US.LAST_UPDATED_BY_2W,
+                    US.OUTPUT_PATH_4W,
+                    US.OUTPUT_BY_4W,
+                    US.OUTPUT_START_4W,
+                    US.OUTPUT_FINISH_TIME_4W,
+                    US.TOTAL_OUTPUT_MS_4W,
+                    US.TEST_POINT_4W,
+                    US.CHECK_BY_4W,
+                    US.CHECK_START_4W,
+                    US.CHECK_FINISH_TIME_4W,
+                    US.TOTAL_CHECK_MS_4W,
+                    US.LAST_UPDATE_DATE_4W,
+                    US.LAST_UPDATED_BY_4W,
+                    A.OPERATION_DESCRIPTION,
+                    ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN 
+            FROM 
+                inp.inp_flypin_probe_tool_alert us 
+                JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO 
+            WHERE US.DATA_ID='{did}') WHERE RN=1"""
             db = self.init_erp_database_connection()
             if not db: return
             dt = db.SELECT_DIC(sql)
@@ -1806,8 +2218,43 @@ class FlyPinWindow(QMainWindow):
             bg = self.table.item(tr,0).background()
             def v(x): return str(x) if x else ""
             factory = FACTORY_ID_TO_NAME.get(v(r.get("ORG_ID")), v(r.get("ORG_ID")))
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
-            cells = {1:factory,4:v(r.get("OPERATION_DESCRIPTION")),7:v(r.get("REMARK")),9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))}
+            status = self.get_work_status(r.get("STATUS"))
+
+            """
+            ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+            "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+            "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+            ]
+            """
+            cells = {
+                1:factory,
+                4:v(r.get("OPERATION_DESCRIPTION")),
+                7:v(r.get("REMARK")),
+                8:v(r.get("OUTPUT_PATH_2W")),
+                9:v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+                10:v(r.get("OUTPUT_START_2W")),
+                11:v(r.get("OUTPUT_FINISH_TIME_2W")),
+                12:v(r.get("TOTAL_OUTPUT_MS_2W")),
+                13:v(r.get("TEST_POINT_2W")),
+                14:v(self.user_name.get(r.get("CHECK_BY_2W"))),
+                15:v(r.get("CHECK_START_2W")),
+                16:v(r.get("CHECK_FINISH_TIME_2W")),
+                17:v(r.get("TOTAL_CHECK_MS_2W")),
+                18:v(r.get("LAST_UPDATE_DATE_2W")),
+                19:v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+                20: v(r.get("OUTPUT_PATH_4W")),
+                21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+                22: v(r.get("OUTPUT_START_4W")),
+                23: v(r.get("OUTPUT_FINISH_TIME_4W")),
+                24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+                25: v(r.get("TEST_POINT_4W")),
+                26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+                27: v(r.get("CHECK_START_4W")),
+                28: v(r.get("CHECK_FINISH_TIME_4W")),
+                29: v(r.get("TOTAL_CHECK_MS_4W")),
+                30: v(r.get("LAST_UPDATE_DATE_4W")),
+                31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
+            }
             for c,t in cells.items():
                 item = QTableWidgetItem(t)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -1838,23 +2285,50 @@ class FlyPinWindow(QMainWindow):
         except:
             return False
 
-    def do_make(self):
+    def do_2w_make(self):
+        """2W资料输出"""
         if not all([self.current_did, self.current_org_id, self.current_pn]):
             QMessageBox.warning(self,"提示","请选择数据")
             return
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "both")
-        QMessageBox.information(self,"结果","输出成功" if ok else "输出失败")
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "2w")
+        self.showNormal()
+        self.activateWindow()
+        QMessageBox.information(self,"结果","2W输出成功" if ok else "2W输出失败")
         self.update_single_row(self.current_did)
 
-    def do_check(self):
+    def do_2w_check(self):
+        """2W资料检查"""
         if self.current_status != "未检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "both")
-        QMessageBox.information(self,"结果","检查成功" if ok else "检查失败")
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "2w")
+        self.showNormal()
+        self.activateWindow()
+        QMessageBox.information(self,"结果","2W检查成功" if ok else "2W检查失败")
         self.update_single_row(self.current_did)
+
+    def do_4w_check(self):
+        """4W资料检查"""
+        if self.current_status != "未检查":
+            QMessageBox.warning(self,"提示","状态不允许检查")
+            return
+        self.showMinimized()
+        fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "check", "4w")
+        self.showNormal()
+        self.activateWindow()
+        QMessageBox.information(self,"结果","4W检查成功" if ok else "4W检查失败")
+        self.update_single_row(self.current_did)
+
+    def do_make(self):
+        """兼容旧版：2W输出"""
+        self.do_2w_make()
+
+    def do_check(self):
+        """兼容旧版：2W检查"""
+        self.do_2w_check()
 
     def do_input(self):
         msg_box = QMessageBox()
@@ -1891,7 +2365,7 @@ class FlyPinWindow(QMainWindow):
         QMessageBox.information(self,"成功","转换完成")
         db = self.init_erp_database_connection()
         if db:
-            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE16='已转换' WHERE DATA_ID='{self.current_did}'")
+            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='已转换' WHERE DATA_ID='{self.current_did}'")
         self.update_single_row(self.current_did)
 
     def do_4w_out(self):
@@ -1899,7 +2373,9 @@ class FlyPinWindow(QMainWindow):
             QMessageBox.warning(self,"提示","请选择数据")
             return
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "4w_out", "4w")
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "task", "4w")
+        self.showNormal()
+        self.activateWindow()
         QMessageBox.information(self,"结果","4W输出成功" if ok else "4W输出失败")
         self.update_single_row(self.current_did)
 
@@ -2027,9 +2503,10 @@ class FlyPinWindow(QMainWindow):
         dt = db.SQL_EXECUTE(sql)
         return dt
 
-    def do_upload(self):
+    def do_upload(self, layer='2w'):
         """
         上传ERP - 自定义弹窗表单
+        layer: '2w' 或 '4w'，用于区分上传来源
         """
 
         if not self.current_pn or not self.current_org_id:
@@ -2037,7 +2514,8 @@ class FlyPinWindow(QMainWindow):
             return
 
         dialog = QDialog(self)
-        dialog.setWindowTitle("ERP 上传表单")
+        title_layer = "2W" if layer == '2w' else "4W"
+        dialog.setWindowTitle(f"ERP 上传表单 [{title_layer}资料]")
         dialog.setFixedSize(450, 380)
         dialog.setFont(GLOBAL_FONT)
 
@@ -2072,8 +2550,9 @@ class FlyPinWindow(QMainWindow):
 
         self.lbl_update_date = QLabel(now_time)
 
+        test_point = self.current_2w_test_point if layer == '2w' else self.current_4w_test_point
         self.edit_attribute1 = QLineEdit()
-        self.edit_attribute1.setText(self.current_test_point.strip())
+        self.edit_attribute1.setText(test_point.strip() if test_point else '')
         self.edit_attribute1.setStyleSheet(INPUT_NORMAL_STYLE)
 
         self.lbl_jg_mb = QLabel("Y")
@@ -2195,7 +2674,7 @@ class FlyPinWindow(QMainWindow):
                         )
 
             if db:
-                db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE16='已完成' WHERE DATA_ID='{self.current_did}'")
+                db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='已完成' WHERE DATA_ID='{self.current_did}'")
             self.update_single_row(self.current_did)
 
         except Exception as e:
