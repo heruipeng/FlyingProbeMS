@@ -571,13 +571,14 @@ class FlyPinWindow(QMainWindow):
 
         self.table = QTableWidget()
         self.table.setFont(GLOBAL_FONT)
-        self.headers = ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注", "操作",
-                        "输出路径", "输出人", "输出开始", "输出完成", "输出耗时", "2W", "4W", "检查人",
-                        "检查开始", "检查完成", "检查耗时"]
+        self.headers = ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+                        "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+                        "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+                        ]
         self.table.setColumnCount(len(self.headers))
         self.table.setHorizontalHeaderLabels(self.headers)
 
-        col_width = {0:75,1:85,2:140,3:60,4:110,5:140,6:80,7:200,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,18:0,19:0}
+        col_width = {0:75,1:85,2:140,3:60,4:110,5:140,6:80,7:200,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,18:0,19:0,20:0,21:0,22:0,23:0,24:0,25:0,26:0,27:0,28:0,29:0,30:0,31:0}
         hh = self.table.horizontalHeader()
         for c, w in col_width.items():
             hh.setSectionResizeMode(c, QHeaderView.Interactive)
@@ -1052,12 +1053,17 @@ class FlyPinWindow(QMainWindow):
         self.report_detail_table.setFont(GLOBAL_FONT)
         self.report_detail_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
-                               "2W点数", "4W点数", "输出人", "输出完成",
-                               "输出耗时", "检查人", "检查完成", "检查耗时"]
+                        "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+                        "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+                        ]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
         rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 140, 6: 180, 7: 70, 8: 70,
-                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75}
+                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75,
+                         15: 75, 16: 140, 17: 75, 18: 75, 19: 140, 20: 75,
+                         21: 75, 22: 140, 23: 75, 24: 75, 25: 140, 26: 75,
+                         27: 75, 28: 140, 29: 75, 30: 75, 31: 140
+                         }
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
@@ -1211,14 +1217,43 @@ class FlyPinWindow(QMainWindow):
 
             where_sql = " AND ".join(where_clauses)
 
-            sql = f"""SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,
-                       us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
-                       us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,
-                       us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-                       us.ATTRIBUTE14,us.ATTRIBUTE15
-                FROM inp.inp_flypin_probe_tool_alert us
-                WHERE {where_sql}
-                ORDER BY us.CREATION_DATE DESC"""
+            sql = f"""
+            SELECT 
+                US.DATA_ID,
+                US.ITEM_NO,
+                US.REV,
+                US.ORG_ID,
+                US.CREATION_DATE,
+                US.STATUS,
+                US.REMARK ,
+                US.OUTPUT_PATH_2W,
+                US.OUTPUT_BY_2W,
+                US.OUTPUT_START_2W,
+                US.OUTPUT__FINISH_TIME_2W,
+                US.TOTAL_OUTPUT_MS_2W,
+                US.TEST_POINT_2W,
+                US.CHECK_BY_2W,
+                US.CHECK_START_2W,
+                US.CHECK_FINISH_TIME_2W,
+                US.TOTAL_CHECK_MS_2W,
+                US.LAST_UPDATE_DATE_2W,
+                US.LAST_UPDATED_BY_2W,
+                US.OUTPUT_PATH_4W,
+                US.OUTPUT_BY_4W,
+                US.OUTPUT_START_4W,
+                US.OUTPUT__FINISH_TIME_4W,
+                US.TOTAL_OUTPUT_MS_4W,
+                US.TEST_POINT_4W,
+                US.CHECK_BY_4W,
+                US.CHECK_START_4W,
+                US.CHECK_FINISH_TIME_4W,
+                US.TOTAL_CHECK_MS_4W,
+                US.LAST_UPDATE_DATE_4W,
+                US.LAST_UPDATED_BY_4W
+            FROM 
+                inp.inp_flypin_probe_tool_alert us
+            WHERE {where_sql}
+            ORDER BY us.CREATION_DATE DESC"""
 
             db = self.init_erp_database_connection()
             raw = db.SELECT_DIC(sql) if db else []
@@ -1226,7 +1261,7 @@ class FlyPinWindow(QMainWindow):
             if status_text != "全部状态":
                 self.report_data = [
                     r for r in raw
-                    if self.get_work_status(r.get("ATTRIBUTE16")) == status_text
+                    if self.get_work_status(r.get("STATUS")) == status_text
                 ]
             else:
                 self.report_data = raw
@@ -1240,7 +1275,7 @@ class FlyPinWindow(QMainWindow):
                 output_id = self.user_name_id.get(output_user, output_user)
                 self.report_data = [
                     r for r in self.report_data
-                    if str(r.get("ATTRIBUTE6") or "") == output_id
+                    if str(r.get("OUTPUT_BY_2W") or "") == output_id
                 ]
 
             # 检查人筛选
@@ -1249,7 +1284,7 @@ class FlyPinWindow(QMainWindow):
                 check_id = self.user_name_id.get(check_user, check_user)
                 self.report_data = [
                     r for r in self.report_data
-                    if str(r.get("ATTRIBUTE12") or "") == check_id
+                    if str(r.get("CHECK_BY_2W") or "") == check_id
                 ]
 
         except Exception as e:
@@ -1283,10 +1318,10 @@ class FlyPinWindow(QMainWindow):
         user_name = self.user_name
         for r in self.report_data:
             def _v(x): return str(x) if x else ""
-            ou = _v(r.get("ATTRIBUTE6"))
+            ou = _v(r.get("OUTPUT_BY_2W"))
             if ou:
                 output_users.add(user_name.get(ou, ou))
-            cu = _v(r.get("ATTRIBUTE12"))
+            cu = _v(r.get("CHECK_BY_2W"))
             if cu:
                 check_users.add(user_name.get(cu, cu))
 
@@ -1336,7 +1371,7 @@ class FlyPinWindow(QMainWindow):
                 }
             fm = cache['factory_summary'][factory]
             fm["total"] += 1
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 fm["completed"] += 1
             elif status in ("未转换", "未检查"):
@@ -1346,14 +1381,14 @@ class FlyPinWindow(QMainWindow):
             if status == "已转换":
                 fm["converted"] += 1
             try:
-                fm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                fm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+                fm["2w"] += int(r.get("TEST_POINT_2W") or 0)
+                fm["4w"] += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            t_out = self._parse_output_time(r.get("ATTRIBUTE9"))
+            t_out = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
             if t_out > 0:
                 fm["times"].append(t_out)
-            op = user_name.get(_v(r.get("ATTRIBUTE6")), "")
+            op = user_name.get(_v(r.get("OUTPUT_BY_2W")), "")
             if op:
                 fm["operators"][op] += 1
 
@@ -1369,7 +1404,7 @@ class FlyPinWindow(QMainWindow):
                 }
             dm = cache['daily_stats'][date_str]
             dm["total"] += 1
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 dm["completed"] += 1
             elif status in ("未转换", "未检查"):
@@ -1377,11 +1412,11 @@ class FlyPinWindow(QMainWindow):
             elif status in ("未运行", "未输出"):
                 dm["not_run"] += 1
             try:
-                dm["2w"] += int(r.get("ATTRIBUTE10") or 0)
-                dm["4w"] += int(r.get("ATTRIBUTE11") or 0)
+                dm["2w"] += int(r.get("TEST_POINT_2W") or 0)
+                dm["4w"] += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            op = _v(r.get("ATTRIBUTE6"))
+            op = _v(r.get("OUTPUT_BY_2W"))
             if op:
                 dm["users"].add(op)
 
@@ -1400,7 +1435,7 @@ class FlyPinWindow(QMainWindow):
         get_status = self.get_work_status
 
         for r in self.report_data:
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
             if status == "已完成":
                 completed += 1
             elif status in ("未转换", "未检查"):
@@ -1408,11 +1443,11 @@ class FlyPinWindow(QMainWindow):
             elif status in ("未运行", "未输出"):
                 not_run += 1
             try:
-                total_2w += int(r.get("ATTRIBUTE10") or 0)
-                total_4w += int(r.get("ATTRIBUTE11") or 0)
+                total_2w += int(r.get("TEST_POINT_2W") or 0)
+                total_4w += int(r.get("TEST_POINT_4W") or 0)
             except:
                 pass
-            t = self._parse_output_time(r.get("ATTRIBUTE9"))
+            t = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
             if t > 0:
                 total_time += t
                 time_count += 1
@@ -1464,7 +1499,7 @@ class FlyPinWindow(QMainWindow):
 
             org = str(r.get("ORG_ID") or "")
             factory = FACTORY_ID_TO_NAME.get(org, org)
-            status = get_status(r.get("ATTRIBUTE16"))
+            status = get_status(r.get("STATUS"))
 
             remark = str(r.get("REMARK") or "")
             # 截断过长备注
@@ -1479,14 +1514,14 @@ class FlyPinWindow(QMainWindow):
                 status,
                 str(r.get("CREATION_DATE") or ""),
                 remark,
-                str(r.get("ATTRIBUTE10") or ""),
-                str(r.get("ATTRIBUTE11") or ""),
-                user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                str(r.get("ATTRIBUTE8") or ""),
-                str(r.get("ATTRIBUTE9") or ""),
-                user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                str(r.get("ATTRIBUTE14") or ""),
-                str(r.get("ATTRIBUTE15") or ""),
+                str(r.get("TEST_POINT_2W") or ""),
+                str(r.get("TEST_POINT_4W") or ""),
+                user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),
+                str(r.get("OUTPUT__FINISH_TIME_2W") or ""),
+                str(r.get("TOTAL_OUTPUT_MS_2W") or ""),
+                user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),
+                str(r.get("CHECK_FINISH_TIME_2W") or ""),
+                str(r.get("TOTAL_CHECK_MS_2W") or ""),
             ]
 
             for col, txt in enumerate(items_data):
@@ -1623,18 +1658,18 @@ class FlyPinWindow(QMainWindow):
                     for r in self.report_data:
                         org = str(r.get("ORG_ID") or "")
                         factory = FACTORY_ID_TO_NAME.get(org, org)
-                        status = self.get_work_status(r.get("ATTRIBUTE16"))
+                        status = self.get_work_status(r.get("STATUS"))
                         writer.writerow([
                             factory, str(r.get("ITEM_NO") or ""), str(r.get("REV") or ""),
                             status, str(r.get("CREATION_DATE") or ""),
                             str(r.get("REMARK") or ""),
-                            str(r.get("ATTRIBUTE10") or ""), str(r.get("ATTRIBUTE11") or ""),
-                            self.user_name.get(str(r.get("ATTRIBUTE6") or ""), ""),
-                            str(r.get("ATTRIBUTE8") or ""),
-                            str(r.get("ATTRIBUTE9") or ""),
-                            self.user_name.get(str(r.get("ATTRIBUTE12") or ""), ""),
-                            str(r.get("ATTRIBUTE14") or ""),
-                            str(r.get("ATTRIBUTE15") or ""),
+                            str(r.get("TEST_POINT_2W") or ""), str(r.get("TEST_POINT_4W") or ""),
+                            self.user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),
+                            str(r.get("OUTPUT__FINISH_TIME_2W") or ""),
+                            str(r.get("TOTAL_OUTPUT_MS_2W") or ""),
+                            self.user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),
+                            str(r.get("CHECK_FINISH_TIME_2W") or ""),
+                            str(r.get("TOTAL_CHECK_MS_2W") or ""),
                         ])
                 QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
             except Exception as e:
@@ -1877,10 +1912,42 @@ class FlyPinWindow(QMainWindow):
             fid = FACTORY_MAP[self.cb_factory.currentText()]
             sd = self.date_start.date().toString("yyyy-MM-dd")
             ed = self.date_end.date().toString("yyyy-MM-dd")
-            sql = f"""SELECT * FROM (SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,
-            us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,
-            us.ATTRIBUTE14,us.ATTRIBUTE15,A.OPERATION_DESCRIPTION,
-            ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN
+            sql = f"""
+            SELECT * FROM (
+                SELECT 
+                    US.DATA_ID,
+                    US.ITEM_NO,
+                    US.REV,
+                    US.ORG_ID,
+                    US.CREATION_DATE,
+                    US.STATUS,
+                    US.REMARK ,
+                    US.OUTPUT_PATH_2W,
+                    US.OUTPUT_BY_2W,
+                    US.OUTPUT_START_2W,
+                    US.OUTPUT__FINISH_TIME_2W,
+                    US.TOTAL_OUTPUT_MS_2W,
+                    US.TEST_POINT_2W,
+                    US.CHECK_BY_2W,
+                    US.CHECK_START_2W,
+                    US.CHECK_FINISH_TIME_2W,
+                    US.TOTAL_CHECK_MS_2W,
+                    US.LAST_UPDATE_DATE_2W,
+                    US.LAST_UPDATED_BY_2W,
+                    US.OUTPUT_PATH_4W,
+                    US.OUTPUT_BY_4W,
+                    US.OUTPUT_START_4W,
+                    US.OUTPUT__FINISH_TIME_4W,
+                    US.TOTAL_OUTPUT_MS_4W,
+                    US.TEST_POINT_4W,
+                    US.CHECK_BY_4W,
+                    US.CHECK_START_4W,
+                    US.CHECK_FINISH_TIME_4W,
+                    US.TOTAL_CHECK_MS_4W,
+                    US.LAST_UPDATE_DATE_4W,
+                    US.LAST_UPDATED_BY_4W,
+                    A.OPERATION_DESCRIPTION,
+                    ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN
             FROM inp.inp_flypin_probe_tool_alert us
             JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO
             WHERE US.OPERATON_CLASSCODE='ET_DATA' AND US.ORG_ID='{fid}'
@@ -1900,7 +1967,7 @@ class FlyPinWindow(QMainWindow):
             sop = str(r.get("OPERATION_DESCRIPTION","")).strip()
             ops.add(sop)
             if kw and kw not in str(r.get("ITEM_NO","")).lower(): continue
-            s = self.get_work_status(r.get("ATTRIBUTE16"))
+            s = self.get_work_status(r.get("STATUS"))
             if st != "全部状态" and s != st: continue
             if op != "全部工序" and sop != op: continue
             res.append(r)
@@ -1939,14 +2006,54 @@ class FlyPinWindow(QMainWindow):
             op_desc = v(r.get("OPERATION_DESCRIPTION"))
             ctime = v(r.get("CREATION_DATE"))
             remark = v(r.get("REMARK"))
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
+            status = self.get_work_status(r.get("STATUS"))
 
+            # item_map = {
+            #     0:did,1:factory,2:item,3:rev,4:op_desc,5:ctime,7:remark,
+            #     9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),
+            #     12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),
+            #     15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),
+            #     18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))
+            # }
+
+            """
+            ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+            "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+            "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+            ]
+            """
             item_map = {
-                0:did,1:factory,2:item,3:rev,4:op_desc,5:ctime,7:remark,
-                9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),
-                12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),
-                15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),
-                18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))
+                0:did,
+                1:factory,
+                2:item,
+                3:rev,
+                4:op_desc,
+                5:ctime,
+                7: remark,
+                8: v(r.get("OUTPUT_PATH_2W")),
+                9: v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+                10: v(r.get("OUTPUT_START_2W")),
+                11: v(r.get("OUTPUT__FINISH_TIME_2W")),
+                12: v(r.get("TOTAL_OUTPUT_MS_2W")),
+                13: v(r.get("TEST_POINT_2W")),
+                14: v(self.user_name.get(r.get("CHECK_BY_2W"))),
+                15: v(r.get("CHECK_START_2W")),
+                16: v(r.get("CHECK_FINISH_TIME_2W")),
+                17: v(r.get("TOTAL_CHECK_MS_2W")),
+                18: v(r.get("LAST_UPDATE_DATE_2W")),
+                19: v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+                20: v(r.get("OUTPUT_PATH_4W")),
+                21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+                22: v(r.get("OUTPUT_START_4W")),
+                23: v(r.get("OUTPUT__FINISH_TIME_4W")),
+                24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+                25: v(r.get("TEST_POINT_4W")),
+                26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+                27: v(r.get("CHECK_START_4W")),
+                28: v(r.get("CHECK_FINISH_TIME_4W")),
+                29: v(r.get("TOTAL_CHECK_MS_4W")),
+                30: v(r.get("LAST_UPDATE_DATE_4W")),
+                31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
             }
             for col, txt in item_map.items():
                 cell = QTableWidgetItem(txt)
@@ -1989,7 +2096,46 @@ class FlyPinWindow(QMainWindow):
 
     def update_single_row(self, did):
         try:
-            sql = f"SELECT * FROM (SELECT us.DATA_ID,us.ITEM_NO,us.REV,us.ORG_ID,us.CREATION_DATE,us.ATTRIBUTE16,us.REMARK,us.DATA_PATH,us.ATTRIBUTE6,us.ATTRIBUTE7,us.ATTRIBUTE8,us.ATTRIBUTE9,us.ATTRIBUTE10,us.ATTRIBUTE11,us.ATTRIBUTE12,us.ATTRIBUTE13,us.ATTRIBUTE14,us.ATTRIBUTE15,A.OPERATION_DESCRIPTION,ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN FROM inp.inp_flypin_probe_tool_alert us JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO WHERE US.DATA_ID='{did}') WHERE RN=1"
+            sql = f"""
+            SELECT * FROM (
+                SELECT 
+                    US.DATA_ID,
+                    US.ITEM_NO,
+                    US.REV,
+                    US.ORG_ID,
+                    US.CREATION_DATE,
+                    US.STATUS,
+                    US.REMARK ,
+                    US.OUTPUT_PATH_2W,
+                    US.OUTPUT_BY_2W,
+                    US.OUTPUT_START_2W,
+                    US.OUTPUT__FINISH_TIME_2W,
+                    US.TOTAL_OUTPUT_MS_2W,
+                    US.TEST_POINT_2W,
+                    US.CHECK_BY_2W,
+                    US.CHECK_START_2W,
+                    US.CHECK_FINISH_TIME_2W,
+                    US.TOTAL_CHECK_MS_2W,
+                    US.LAST_UPDATE_DATE_2W,
+                    US.LAST_UPDATED_BY_2W,
+                    US.OUTPUT_PATH_4W,
+                    US.OUTPUT_BY_4W,
+                    US.OUTPUT_START_4W,
+                    US.OUTPUT__FINISH_TIME_4W,
+                    US.TOTAL_OUTPUT_MS_4W,
+                    US.TEST_POINT_4W,
+                    US.CHECK_BY_4W,
+                    US.CHECK_START_4W,
+                    US.CHECK_FINISH_TIME_4W,
+                    US.TOTAL_CHECK_MS_4W,
+                    US.LAST_UPDATE_DATE_4W,
+                    US.LAST_UPDATED_BY_4W,
+                    A.OPERATION_DESCRIPTION,
+                    ROW_NUMBER() OVER(PARTITION BY A.ORGANIZATION_ID,SUBSTR(A.SEGMENT1,1,15) ORDER BY A.OPERATION_SEQ_NUM DESC) RN 
+            FROM 
+                inp.inp_flypin_probe_tool_alert us 
+                JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO 
+            WHERE US.DATA_ID='{did}') WHERE RN=1"""
             db = self.init_erp_database_connection()
             if not db: return
             dt = db.SELECT_DIC(sql)
@@ -2005,8 +2151,44 @@ class FlyPinWindow(QMainWindow):
             bg = self.table.item(tr,0).background()
             def v(x): return str(x) if x else ""
             factory = FACTORY_ID_TO_NAME.get(v(r.get("ORG_ID")), v(r.get("ORG_ID")))
-            status = self.get_work_status(r.get("ATTRIBUTE16"))
-            cells = {1:factory,4:v(r.get("OPERATION_DESCRIPTION")),7:v(r.get("REMARK")),9:v(r.get("DATA_PATH")),10:v(self.user_name.get(r.get("ATTRIBUTE6"))),11:v(r.get("ATTRIBUTE7")),12:v(r.get("ATTRIBUTE8")),13:v(r.get("ATTRIBUTE9")),14:v(r.get("ATTRIBUTE10")),15:v(r.get("ATTRIBUTE11")),16:v(self.user_name.get(r.get("ATTRIBUTE12"))),17:v(r.get("ATTRIBUTE13")),18:v(r.get("ATTRIBUTE14")),19:v(r.get("ATTRIBUTE15"))}
+            status = self.get_work_status(r.get("STATUS"))
+
+            """
+            ["DATA_ID", "厂区", "料号", "版本", "在线工序", "创建时间", "状态", "备注",
+            "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
+            "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
+            ]
+            """
+            cells = {
+                1:factory,
+                4:v(r.get("OPERATION_DESCRIPTION")),
+                6: v(self.user_name.get(r.get("STATUS"))),
+                7:v(r.get("REMARK")),
+                8:v(r.get("OUTPUT_PATH_2W")),
+                9:v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+                10:v(r.get("OUTPUT_START_2W")),
+                11:v(r.get("OUTPUT__FINISH_TIME_2W")),
+                12:v(r.get("TOTAL_OUTPUT_MS_2W")),
+                13:v(r.get("TEST_POINT_2W")),
+                14:v(self.user_name.get(r.get("CHECK_BY_2W"))),
+                15:v(r.get("CHECK_START_2W")),
+                16:v(r.get("CHECK_FINISH_TIME_2W")),
+                17:v(r.get("TOTAL_CHECK_MS_2W")),
+                18:v(r.get("LAST_UPDATE_DATE_2W")),
+                19:v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+                20: v(r.get("OUTPUT_PATH_4W")),
+                21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+                22: v(r.get("OUTPUT_START_4W")),
+                23: v(r.get("OUTPUT__FINISH_TIME_4W")),
+                24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+                25: v(r.get("TEST_POINT_4W")),
+                26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+                27: v(r.get("CHECK_START_4W")),
+                28: v(r.get("CHECK_FINISH_TIME_4W")),
+                29: v(r.get("TOTAL_CHECK_MS_4W")),
+                30: v(r.get("LAST_UPDATE_DATE_4W")),
+                31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
+            }
             for c,t in cells.items():
                 item = QTableWidgetItem(t)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -2127,7 +2309,7 @@ class FlyPinWindow(QMainWindow):
         QMessageBox.information(self,"成功","转换完成")
         db = self.init_erp_database_connection()
         if db:
-            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE16='已转换' WHERE DATA_ID='{self.current_did}'")
+            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='已转换' WHERE DATA_ID='{self.current_did}'")
         self.update_single_row(self.current_did)
 
     def do_4w_out(self):
@@ -2437,7 +2619,7 @@ class FlyPinWindow(QMainWindow):
                         )
 
             if db:
-                db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET ATTRIBUTE16='已完成' WHERE DATA_ID='{self.current_did}'")
+                db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='已完成' WHERE DATA_ID='{self.current_did}'")
             self.update_single_row(self.current_did)
 
         except Exception as e:
