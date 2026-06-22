@@ -249,7 +249,7 @@ class FlyingProbeTaskScheduler:
             self._init_erp_database()
             logger.info(f"【{job}】开始上报处理结果至数据库")
 
-            ATTRIBUTE16 = '已完成' if mode is None else '未输出'
+            STATUS = '已完成' if mode is None else '未输出'
             sql = f"""
             UPDATE 
                 INP.INP_FLYPIN_PROBE_TOOL_ALERT 
@@ -258,7 +258,7 @@ class FlyingProbeTaskScheduler:
                 remark = '{msg}', 
                 write_date = SYSDATE, 
                 write_by = 'sys_tem',
-                ATTRIBUTE16 = '{ATTRIBUTE16}'
+                STATUS = '{STATUS}'
             WHERE 
                 data_id = {id}
             """

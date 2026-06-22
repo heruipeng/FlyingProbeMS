@@ -74,8 +74,8 @@ def load_user():
 
 # ===================== 全局版本版权（统一入口） =====================
 SOFTWARE_NAME = "飞针测试管理系统"
-SOFTWARE_VERSION = "V4.0"
-release_date = "2026-06-19"
+SOFTWARE_VERSION = "V5.0"
+release_date = "2026-06-22"
 DEVELOPER = "何瑞鹏"
 # COPYRIGHT_INFO = "Copyright © SUNTAK 2026 All Rights Reserved."
 COPYRIGHT_INFO = "SUNTAK@2026 版权所有"
