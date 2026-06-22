@@ -880,8 +880,8 @@ class FlyPinWindow(QMainWindow):
         self.btn_4w_convert.clicked.connect(self.do_convert)
         self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
         # self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
-        self.btn_2w_open_path.clicked.connect(self.open_file_folder)
-        self.btn_4w_open_path.clicked.connect(self.open_file_folder)
+        self.btn_2w_open_path.clicked.connect(lambda: self.open_file_folder('2w'))
+        self.btn_4w_open_path.clicked.connect(lambda: self.open_file_folder('4w'))
 
         return page
 
@@ -1725,7 +1725,7 @@ class FlyPinWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "导出失败", f"错误：{str(e)}")
     # ==================== 原有任务管理方法（保持不变）====================
-    def open_file_folder(self):
+    def open_file_folder(self,mode='2w'):
         """点击按钮打开文件所在文件夹"""
         path = self.current_file_path.strip()
         if not path or not os.path.exists(path):
@@ -1779,9 +1779,10 @@ class FlyPinWindow(QMainWindow):
         rev = get_cell(3)
         self.current_pn = f"{item_no}{rev}"
         self.current_status = get_cell(6)
-        self.current_file_path = get_cell(9)
-        self.current_2w_test_point = get_cell(14)
-        self.current_4w_test_point = get_cell(15)
+        self.current_2w_file_path = get_cell(8)
+        self.current_4w_file_path = get_cell(20)
+        self.current_2w_test_point = get_cell(13)
+        self.current_4w_test_point = get_cell(25)
         # 保留兼容
         self.current_test_point = self.current_2w_test_point
 
@@ -1837,35 +1838,65 @@ class FlyPinWindow(QMainWindow):
             # self.btn_4w_upload.setEnabled(False)
 
         # ===== 更新路径标签 =====
-        file_path = self.current_file_path
-        self.lbl_2w_path_val.setText(file_path if file_path else "无")
-        self.lbl_4w_path_val.setText(file_path if file_path else "无")
+        self.lbl_2w_path_val.setText(self.current_2w_file_path if self.current_2w_file_path else "无")
+        self.lbl_4w_path_val.setText(self.current_4w_file_path if self.current_4w_file_path else "无")
+
+        """
+        8: v(r.get("OUTPUT_PATH_2W")),
+        9: v(self.user_name.get(r.get("OUTPUT_BY_2W"))),
+        10: v(r.get("OUTPUT_START_2W")),
+        11: v(r.get("OUTPUT__FINISH_TIME_2W")),
+        12: v(r.get("TOTAL_OUTPUT_MS_2W")),
+        13: v(r.get("TEST_POINT_2W")),
+        14: v(self.user_name.get(r.get("CHECK_BY_2W"))),
+        15: v(r.get("CHECK_START_2W")),
+        16: v(r.get("CHECK_FINISH_TIME_2W")),
+        17: v(r.get("TOTAL_CHECK_MS_2W")),
+        18: v(r.get("LAST_UPDATE_DATE_2W")),
+        19: v(self.user_name.get(r.get("LAST_UPDATED_BY_2W"))),
+        20: v(r.get("OUTPUT_PATH_4W")),
+        21: v(self.user_name.get(r.get("OUTPUT_BY_4W"))),
+        22: v(r.get("OUTPUT_START_4W")),
+        23: v(r.get("OUTPUT__FINISH_TIME_4W")),
+        24: v(r.get("TOTAL_OUTPUT_MS_4W")),
+        25: v(r.get("TEST_POINT_4W")),
+        26: v(self.user_name.get(r.get("CHECK_BY_4W"))),
+        27: v(r.get("CHECK_START_4W")),
+        28: v(r.get("CHECK_FINISH_TIME_4W")),
+        29: v(r.get("TOTAL_CHECK_MS_4W")),
+        30: v(r.get("LAST_UPDATE_DATE_4W")),
+        31: v(self.user_name.get(r.get("LAST_UPDATED_BY_4W"))),
+        """
 
         # ===== 2W Tab 详情 =====
         detail_2w = [
-            ("输出人", 10),
-            ("输出开始时间", 11),
-            ("输出完成时间", 12),
-            ("输出总耗时", 13),
-            ("2W测试点数", 14),
-            ("检查人", 16),
-            ("检查开始时间", 17),
-            ("检查完成时间", 18),
-            ("检查总耗时", 19),
+            ("输出人", 9),
+            ("输出开始时间", 10),
+            ("输出完成时间", 11),
+            ("输出总耗时", 12),
+            ("2W测试点数", 13),
+            ("检查人", 14),
+            ("检查开始时间", 15),
+            ("检查完成时间", 16),
+            ("检查总耗时", 17),
+            ("最后更新时间", 18),
+            ("最后更新人", 19)
         ]
         self._populate_detail_layout(self.scroll_layout_2w, detail_2w, get_cell)
 
         # ===== 4W Tab 详情 =====
         detail_4w = [
-            ("输出人", 10),
-            ("输出开始时间", 11),
-            ("输出完成时间", 12),
-            ("输出总耗时", 13),
-            ("4W测试点数", 15),
-            ("检查人", 16),
-            ("检查开始时间", 17),
-            ("检查完成时间", 18),
-            ("检查总耗时", 19),
+            ("输出人", 21),
+            ("输出开始时间", 22),
+            ("输出完成时间", 23),
+            ("输出总耗时", 27),
+            ("4W测试点数", 25),
+            ("检查人", 26),
+            ("检查开始时间", 27),
+            ("检查完成时间", 28),
+            ("检查总耗时", 29),
+            ("最后更新时间", 30),
+            ("最后更新人", 31)
         ]
         self._populate_detail_layout(self.scroll_layout_4w, detail_4w, get_cell)
 
