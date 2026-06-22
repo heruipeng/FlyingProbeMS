@@ -211,7 +211,7 @@ QPushButton:checked {{
 """
 
 # ===================== 工厂映射配置 =====================
-FACTORY_MAP = {"江门一厂": "85", "江门二厂": "107", "珠海一厂": "168", "珠海二厂": "228", "大连电子": "84"}
+FACTORY_MAP = {"江门一厂": "85", "江门二厂": "107", "珠海一厂": "168", "珠海二厂": "228", "金州工厂": "84"}
 FACTORY_MAP_NUM = {"JM1": "85", "JM2": "107", "ZH1": "168", "ZH2": "228", "DL": "84"}
 FACTORY_ID_TO_NAME = {v: k for k, v in FACTORY_MAP.items()}
 FACTORY_ID_TO_NUM = {v: k for k, v in FACTORY_MAP_NUM.items()}

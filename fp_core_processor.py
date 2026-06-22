@@ -1261,13 +1261,6 @@ class FlyingProbeCoreProcessor:
         try:
             self.init_erp_conn()
             logger.info(f"【{self.raw_job}】上报数据库")
-            start_time_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
-            end_time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
-
-            if output_mode == '2w':
-                output_path = self.output_2w_path_network
-            else:
-                output_path = self.output_4w_path_network
 
             if error_msg:
                 STATUS = '未输出'
@@ -1286,6 +1279,15 @@ class FlyingProbeCoreProcessor:
                     """
                 self.db_erp.SQL_EXECUTE(sql)
             else:
+
+                start_time_str = start_time.strftime("%Y-%m-%d %H:%M:%S")
+                end_time_str = end_time.strftime("%Y-%m-%d %H:%M:%S")
+
+                if output_mode == '2w':
+                    output_path = self.output_2w_path_network
+                else:
+                    output_path = self.output_4w_path_network
+
                 if self.mode in ['check']:
                     STATUS = '未转换'
                     if output_mode == '2w':
