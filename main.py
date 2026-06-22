@@ -1062,7 +1062,7 @@ class FlyPinWindow(QMainWindow):
                          9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75,
                          15: 75, 16: 140, 17: 75, 18: 75, 19: 140, 20: 75,
                          21: 75, 22: 140, 23: 75, 24: 75, 25: 140, 26: 75,
-                         27: 75, 28: 140, 29: 75, 30: 75, 31: 140
+                         27: 75, 28: 140, 29: 75, 30: 75
                          }
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
@@ -1507,21 +1507,37 @@ class FlyPinWindow(QMainWindow):
                 remark = remark[:57] + "..."
 
             items_data = [
-                str(s + i + 1),
-                factory,
-                str(r.get("ITEM_NO") or ""),
-                str(r.get("REV") or ""),
-                status,
-                str(r.get("CREATION_DATE") or ""),
-                remark,
-                str(r.get("TEST_POINT_2W") or ""),
-                str(r.get("TEST_POINT_4W") or ""),
-                user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),
-                str(r.get("OUTPUT_FINISH_TIME_2W") or ""),
-                str(r.get("TOTAL_OUTPUT_MS_2W") or ""),
-                user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),
-                str(r.get("CHECK_FINISH_TIME_2W") or ""),
-                str(r.get("TOTAL_CHECK_MS_2W") or ""),
+                str(s + i + 1),                                              # 0  序号
+                factory,                                                     # 1  厂区
+                str(r.get("ITEM_NO") or ""),                                # 2  料号
+                str(r.get("REV") or ""),                                    # 3  版本
+                status,                                                      # 4  状态
+                str(r.get("CREATION_DATE") or ""),                           # 5  创建时间
+                remark,                                                      # 6  备注
+                str(r.get("OUTPUT_PATH_2W") or ""),                          # 7  2W输出路径
+                user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),         # 8  2W输出人
+                str(r.get("OUTPUT_START_2W") or ""),                         # 9  2W输出开始时间
+                str(r.get("OUTPUT_FINISH_TIME_2W") or ""),                   # 10 2W输出完成时间
+                str(r.get("TOTAL_OUTPUT_MS_2W") or ""),                      # 11 2W输出总耗时
+                str(r.get("TEST_POINT_2W") or ""),                           # 12 2W测试点
+                user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),          # 13 2W检查人
+                str(r.get("CHECK_START_2W") or ""),                          # 14 2W检查开始时间
+                str(r.get("CHECK_FINISH_TIME_2W") or ""),                    # 15 2W检查完成时间
+                str(r.get("TOTAL_CHECK_MS_2W") or ""),                       # 16 2W检查总耗时
+                str(r.get("LAST_UPDATE_DATE_2W") or ""),                     # 17 2W最后更新时间
+                user_name.get(str(r.get("LAST_UPDATED_BY_2W") or ""), ""),   # 18 2W最后更新人
+                str(r.get("OUTPUT_PATH_4W") or ""),                          # 19 4W输出路径
+                user_name.get(str(r.get("OUTPUT_BY_4W") or ""), ""),         # 20 4W输出人
+                str(r.get("OUTPUT_START_4W") or ""),                         # 21 4W输出开始时间
+                str(r.get("OUTPUT_FINISH_TIME_4W") or ""),                   # 22 4W输出完成时间
+                str(r.get("TOTAL_OUTPUT_MS_4W") or ""),                      # 23 4W输出总耗时
+                str(r.get("TEST_POINT_4W") or ""),                           # 24 4W测试点
+                user_name.get(str(r.get("CHECK_BY_4W") or ""), ""),          # 25 4W检查人
+                str(r.get("CHECK_START_4W") or ""),                          # 26 4W检查开始时间
+                str(r.get("CHECK_FINISH_TIME_4W") or ""),                    # 27 4W检查完成时间
+                str(r.get("TOTAL_CHECK_MS_4W") or ""),                       # 28 4W检查总耗时
+                str(r.get("LAST_UPDATE_DATE_4W") or ""),                     # 29 4W最后更新时间
+                user_name.get(str(r.get("LAST_UPDATED_BY_4W") or ""), ""),   # 30 4W最后更新人
             ]
 
             for col, txt in enumerate(items_data):
@@ -1663,13 +1679,30 @@ class FlyPinWindow(QMainWindow):
                             factory, str(r.get("ITEM_NO") or ""), str(r.get("REV") or ""),
                             status, str(r.get("CREATION_DATE") or ""),
                             str(r.get("REMARK") or ""),
-                            str(r.get("TEST_POINT_2W") or ""), str(r.get("TEST_POINT_4W") or ""),
+                            str(r.get("OUTPUT_PATH_2W") or ""),
                             self.user_name.get(str(r.get("OUTPUT_BY_2W") or ""), ""),
+                            str(r.get("OUTPUT_START_2W") or ""),
                             str(r.get("OUTPUT_FINISH_TIME_2W") or ""),
                             str(r.get("TOTAL_OUTPUT_MS_2W") or ""),
+                            str(r.get("TEST_POINT_2W") or ""),
                             self.user_name.get(str(r.get("CHECK_BY_2W") or ""), ""),
+                            str(r.get("CHECK_START_2W") or ""),
                             str(r.get("CHECK_FINISH_TIME_2W") or ""),
                             str(r.get("TOTAL_CHECK_MS_2W") or ""),
+                            str(r.get("LAST_UPDATE_DATE_2W") or ""),
+                            self.user_name.get(str(r.get("LAST_UPDATED_BY_2W") or ""), ""),
+                            str(r.get("OUTPUT_PATH_4W") or ""),
+                            self.user_name.get(str(r.get("OUTPUT_BY_4W") or ""), ""),
+                            str(r.get("OUTPUT_START_4W") or ""),
+                            str(r.get("OUTPUT_FINISH_TIME_4W") or ""),
+                            str(r.get("TOTAL_OUTPUT_MS_4W") or ""),
+                            str(r.get("TEST_POINT_4W") or ""),
+                            self.user_name.get(str(r.get("CHECK_BY_4W") or ""), ""),
+                            str(r.get("CHECK_START_4W") or ""),
+                            str(r.get("CHECK_FINISH_TIME_4W") or ""),
+                            str(r.get("TOTAL_CHECK_MS_4W") or ""),
+                            str(r.get("LAST_UPDATE_DATE_4W") or ""),
+                            self.user_name.get(str(r.get("LAST_UPDATED_BY_4W") or ""), ""),
                         ])
                 QMessageBox.information(self, "导出成功", f"✅ 数据明细已导出到：\n{file_path}")
             except Exception as e:
