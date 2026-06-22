@@ -510,7 +510,7 @@ class FlyPinWindow(QMainWindow):
         self.cb_factory.setStyleSheet(INPUT_NORMAL_STYLE)
 
         self.cb_status = QComboBox()
-        self.cb_status.addItems(["全部状态", "未运行", "未输出", "未检查", "未转换", "已转换", "已完成"])
+        self.cb_status.addItems(["全部状态", "待后台处理", "待制作", "待检查", "待转换", "待上传ERP", "已完成"])
         self.cb_status.setCurrentText(self.last_status)
         self.cb_status.setFixedWidth(110)
         self.cb_status.setMinimumHeight(34)
@@ -927,7 +927,7 @@ class FlyPinWindow(QMainWindow):
         row1.addWidget(QLabel("工厂：")); row1.addWidget(self.report_cb_factory)
 
         self.report_cb_status = QComboBox()
-        self.report_cb_status.addItems(["全部状态", "未运行", "未输出", "未检查", "未转换", "已转换", "已完成"])
+        self.report_cb_status.addItems(["全部状态", "待后台处理", "待制作", "待检查", "待转换", "待上传ERP", "已完成"])
         self.report_cb_status.setFixedWidth(110); self.report_cb_status.setMinimumHeight(34)
         row1.addWidget(QLabel("状态：")); row1.addWidget(self.report_cb_status)
 
@@ -992,12 +992,12 @@ class FlyPinWindow(QMainWindow):
 
         self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
-        self.card_pending = StatCard("处理中", "0", WARNING_COLOR, "⏳")
-        self.card_not_run = StatCard("未执行", "0", DANGER_COLOR, "⛔")
+        self.card_pending = StatCard("待制作", "0", WARNING_COLOR, "⏳")
+        self.card_not_run = StatCard("待后台处理", "0", DANGER_COLOR, "⛔")
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
         self.card_avg_time = StatCard("平均耗时", "0 min", "#EC4899", "⏱️")
-        self.card_points_2w = StatCard("2W总点数", "0", "#06B6D4", "🔌")
-        self.card_points_4w = StatCard("4W总点数", "0", "#F59E0B", "🔋")
+        self.card_points_2w = StatCard("2W输出总点数/平均PCS点数", "0", "#06B6D4", "🔌")
+        self.card_points_4w = StatCard("4W输出总点数/平均PCS点数", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_completed, self.card_pending,
                      self.card_not_run, self.card_completion_rate, self.card_avg_time,
@@ -1082,7 +1082,7 @@ class FlyPinWindow(QMainWindow):
         self.report_factory_table = QTableWidget()
         self.report_factory_table.setFont(GLOBAL_FONT)
         self.report_factory_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.factory_headers = ["厂区", "总记录", "已完成", "处理中", "未运行", "已转换",
+        self.factory_headers = ["厂区", "总记录", "已完成", "待制作", "待后台处理", "待上传ERP",
                                 "完成率", "2W点数", "4W点数", "平均耗时(min)", "输出人TOP3"]
         self.report_factory_table.setColumnCount(len(self.factory_headers))
         self.report_factory_table.setHorizontalHeaderLabels(self.factory_headers)
@@ -1106,7 +1106,7 @@ class FlyPinWindow(QMainWindow):
         self.report_daily_table = QTableWidget()
         self.report_daily_table.setFont(GLOBAL_FONT)
         self.report_daily_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.daily_headers = ["日期", "记录数", "已完成", "处理中", "未运行", "完成率",
+        self.daily_headers = ["日期", "记录数", "已完成", "待制作", "待后台处理", "完成率",
                               "2W点数", "4W点数", "输出用户数"]
         self.report_daily_table.setColumnCount(len(self.daily_headers))
         self.report_daily_table.setHorizontalHeaderLabels(self.daily_headers)
@@ -1209,6 +1209,7 @@ class FlyPinWindow(QMainWindow):
 
             where_clauses = [
                 "US.OPERATON_CLASSCODE='ET_DATA'",
+                "(US.REMARK IS NULL OR  US.REMARK NOT LIKE '%ERP记录已输出%')",
                 f"TRUNC(us.CREATION_DATE) BETWEEN TO_DATE('{sd}','YYYY-MM-DD') AND TO_DATE('{ed}','YYYY-MM-DD')"
             ]
             if factory_text != "全部工厂":
@@ -1375,11 +1376,11 @@ class FlyPinWindow(QMainWindow):
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 fm["completed"] += 1
-            elif status in ("未转换", "未检查"):
+            elif status in ("待转换", "待检查"):
                 fm["pending"] += 1
-            elif status in ("未运行", "未输出"):
+            elif status in ("待后台处理", "待制作"):
                 fm["not_run"] += 1
-            if status == "已转换":
+            if status == "待上传ERP":
                 fm["converted"] += 1
             try:
                 fm["2w"] += int(r.get("TEST_POINT_2W") or 0)
@@ -1408,9 +1409,9 @@ class FlyPinWindow(QMainWindow):
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 dm["completed"] += 1
-            elif status in ("未转换", "未检查"):
+            elif status in ("待转换", "待检查"):
                 dm["pending"] += 1
-            elif status in ("未运行", "未输出"):
+            elif status in ("待后台处理", "待制作"):
                 dm["not_run"] += 1
             try:
                 dm["2w"] += int(r.get("TEST_POINT_2W") or 0)
@@ -1434,18 +1435,23 @@ class FlyPinWindow(QMainWindow):
         total_time = 0
         time_count = 0
         get_status = self.get_work_status
-
+        average_value_2w = 0
+        average_value_4w = 0
         for r in self.report_data:
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 completed += 1
-            elif status in ("未转换", "未检查"):
+            elif status in ("待转换", "待检查"):
                 pending += 1
-            elif status in ("未运行", "未输出"):
+            elif status in ("待后台处理", "待制作"):
                 not_run += 1
             try:
                 total_2w += int(r.get("TEST_POINT_2W") or 0)
                 total_4w += int(r.get("TEST_POINT_4W") or 0)
+                if int(r.get("TEST_POINT_2W")) > 0:
+                    average_value_2w += 1
+                if int(r.get("TEST_POINT_4W")) > 0:
+                    average_value_4w += 1
             except:
                 pass
             t = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
@@ -1462,8 +1468,8 @@ class FlyPinWindow(QMainWindow):
         self.card_not_run.set_value(not_run)
         self.card_completion_rate.set_value(rate)
         self.card_avg_time.set_value(f"{avg_t} min")
-        self.card_points_2w.set_value(f"{total_2w:,}")
-        self.card_points_4w.set_value(f"{total_4w:,}")
+        self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w/average_value_2w)}")
+        self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w/average_value_4w)}")
 
     def current_report_view(self):
         """根据当前视图索引渲染表格（从缓存读取）"""
@@ -1828,16 +1834,16 @@ class FlyPinWindow(QMainWindow):
         self.btn_2w_input.setEnabled(True)
         self.btn_2w_convert.setEnabled(True)
         self.btn_2w_upload.setEnabled(True)
-        if self.current_status in ["未运行", "未输出"]:
+        if self.current_status in ["待后台处理", "待制作"]:
             self.btn_2w_check.setEnabled(False)
             self.btn_2w_input.setEnabled(False)
             self.btn_2w_convert.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
-        elif self.current_status == "未检查":
+        elif self.current_status == "待检查":
             self.btn_2w_convert.setEnabled(False)
             self.btn_2w_input.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
-        elif self.current_status == "未转换":
+        elif self.current_status == "待转换":
             self.btn_2w_check.setEnabled(False)
             self.btn_2w_input.setEnabled(False)
             self.btn_2w_upload.setEnabled(False)
@@ -1852,18 +1858,18 @@ class FlyPinWindow(QMainWindow):
         self.btn_4w_input.setEnabled(True)
         self.btn_4w_convert.setEnabled(True)
         # self.btn_4w_upload.setEnabled(True)
-        if self.current_status in ["未运行", "未输出"]:
+        if self.current_status in ["待后台处理", "待制作"]:
             # self.btn_4w_output.setEnabled(False)
             self.btn_4w_check.setEnabled(False)
             self.btn_4w_input.setEnabled(False)
             self.btn_4w_convert.setEnabled(False)
             # self.btn_4w_upload.setEnabled(False)
-        elif self.current_status == "未检查":
+        elif self.current_status == "待检查":
             # self.btn_4w_output.setEnabled(False)
             self.btn_4w_convert.setEnabled(False)
             self.btn_4w_input.setEnabled(False)
             # self.btn_4w_upload.setEnabled(False)
-        elif self.current_status == "未转换":
+        elif self.current_status == "待转换":
             self.btn_4w_check.setEnabled(True)
             self.btn_4w_input.setEnabled(False)
             # self.btn_4w_upload.setEnabled(False)
@@ -1956,13 +1962,13 @@ class FlyPinWindow(QMainWindow):
             layout.addWidget(frame)
 
     def get_work_status(self, val):
-        return str(val).strip() if val else "未运行"
+        return str(val).strip() if val else "待后台处理"
 
     def get_status_color(self, s):
         if s == "已完成": return QColor(0,180,0)
-        if s == "未检查": return QColor(255,140,0)
-        if s == "未转换": return QColor(150,140,0)
-        if s == "未输出": return QColor(220,0,0)
+        if s == "待检查": return QColor(255,140,0)
+        if s == "待转换": return QColor(150,140,0)
+        if s == "待制作": return QColor(220,0,0)
         return QColor(100,100,100)
 
     def init_erp_database_connection(self):
@@ -2018,6 +2024,7 @@ class FlyPinWindow(QMainWindow):
             FROM inp.inp_flypin_probe_tool_alert us
             JOIN APPS.CUX_WIP_TOINP_V A ON A.ORGANIZATION_ID=us.ORG_ID AND SUBSTR(A.SEGMENT1,1,15)=us.ITEM_NO
             WHERE US.OPERATON_CLASSCODE='ET_DATA' AND US.ORG_ID='{fid}'
+            AND (US.REMARK IS NULL OR  US.REMARK NOT LIKE '%ERP记录已输出%')
             AND TRUNC(us.CREATION_DATE) BETWEEN TO_DATE('{sd}','YYYY-MM-DD') AND TO_DATE('{ed}','YYYY-MM-DD')) WHERE RN=1 ORDER BY CREATION_DATE DESC"""
             db = self.init_erp_database_connection()
             self.raw_cache_data = db.SELECT_DIC(sql) if db else []
@@ -2299,7 +2306,7 @@ class FlyPinWindow(QMainWindow):
 
     def do_2w_check(self):
         """2W资料检查"""
-        if self.current_status != "未检查":
+        if self.current_status != "待检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
@@ -2311,7 +2318,7 @@ class FlyPinWindow(QMainWindow):
 
     def do_4w_check(self):
         """4W资料检查"""
-        if self.current_status != "未检查":
+        if self.current_status != "待检查":
             QMessageBox.warning(self,"提示","状态不允许检查")
             return
         self.showMinimized()
@@ -2354,7 +2361,7 @@ class FlyPinWindow(QMainWindow):
         self.update_single_row(self.current_did)
 
     def do_convert(self):
-        # if self.current_status != "未转换":
+        # if self.current_status != "待转换":
         #     QMessageBox.warning(self,"提示","状态不允许转换")
         #     return
         try:
@@ -2365,7 +2372,7 @@ class FlyPinWindow(QMainWindow):
         QMessageBox.information(self,"成功","转换完成")
         db = self.init_erp_database_connection()
         if db:
-            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='已转换' WHERE DATA_ID='{self.current_did}'")
+            db.SQL_EXECUTE(f"UPDATE INP.INP_FLYPIN_PROBE_TOOL_ALERT SET STATUS='待上传ERP' WHERE DATA_ID='{self.current_did}'")
         self.update_single_row(self.current_did)
 
     def do_4w_out(self):

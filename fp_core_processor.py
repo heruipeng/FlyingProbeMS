@@ -1179,8 +1179,8 @@ class FlyingProbeCoreProcessor:
                         if os.path.exists(p):
                             if self.is_auto_mode():
                                 if len(js) > 0:
-                                    if js[0]['STATUS'] in ['已完成','未转换','未检查']:
-                                        if js[0]['STATUS'] == '未检查' and js[0]['TEST_POINT_2W'] == '':
+                                    if js[0]['STATUS'] in ['已完成','待转换','待检查']:
+                                        if js[0]['STATUS'] == '待检查' and js[0]['TEST_POINT_2W'] == '':
                                             break
                                         return True
                             else:
@@ -1263,7 +1263,7 @@ class FlyingProbeCoreProcessor:
             logger.info(f"【{self.raw_job}】上报数据库")
 
             if error_msg:
-                STATUS = '未输出'
+                STATUS = '待制作'
                 info = self._get_remark(self.data_id)
                 if error_msg == info and re.search(re.compile('Invalid argument|when reading a line'), error_msg):
                     sql = f"""
@@ -1289,7 +1289,7 @@ class FlyingProbeCoreProcessor:
                     output_path = self.output_4w_path_network
 
                 if self.mode in ['check']:
-                    STATUS = '未转换'
+                    STATUS = '待转换'
                     if output_mode == '2w':
                         if test_point != '':
                             sql = f"""
@@ -1362,7 +1362,7 @@ class FlyingProbeCoreProcessor:
                             """
                 else:
                     remark = '已输出' if is_exist else '输出成功，软硬结合板类型' if self.raw_job[12:14] == '23' else '输出成功'
-                    STATUS = '未检查'
+                    STATUS = '待检查'
                     if self.is_auto_mode():
                         if output_mode == '2w':
                             sql = f"""
@@ -1407,7 +1407,7 @@ class FlyingProbeCoreProcessor:
                                 data_id = {self.data_id}
                             """
                     else:
-                        STATUS = '未转换'
+                        STATUS = '待转换'
                         if output_mode == '2w':
                             sql = f"""
                             UPDATE
