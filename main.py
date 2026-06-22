@@ -1066,6 +1066,7 @@ class FlyPinWindow(QMainWindow):
                          }
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
+        self.report_detail_table.horizontalHeader().setStretchLastSection(True)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
         self.report_detail_table.setWordWrap(False)
         self.report_detail_table.verticalHeader().setVisible(True)
@@ -1549,6 +1550,8 @@ class FlyPinWindow(QMainWindow):
             st_item = table.item(i, 4)
             if st_item:
                 st_item.setForeground(status_color(status))
+
+        table.resizeColumnsToContents()
 
     def _render_factory_summary(self):
         """工厂汇总 - 从缓存渲染"""
