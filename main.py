@@ -653,7 +653,7 @@ class FlyPinWindow(QMainWindow):
         # 右侧详情面板
         detail_frame = QFrame()
         detail_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
-        detail_frame.setFixedWidth(530)
+        detail_frame.setFixedWidth(400)
         detail_layout = QVBoxLayout(detail_frame)
         detail_layout.setContentsMargins(0,0,0,0)
         detail_layout.setSpacing(0)
@@ -678,6 +678,8 @@ class FlyPinWindow(QMainWindow):
                 background: {WHITE};
             }}
             QTabBar::tab {{
+                width: 70px;   /* 控制标签长度 */
+                height: 18px;
                 padding: 10px 24px;
                 font-family: 微软雅黑;
                 font-size: 10pt;
