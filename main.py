@@ -473,17 +473,18 @@ class FlyPinWindow(QMainWindow):
             }}
         """)
         avatar.setText(avatar_text)
-        user_layout.addWidget(avatar)
+        user_layout.addWidget(avatar, alignment=Qt.AlignVCenter)
 
-        # 右侧文字（上下两行）
+        # 右侧文字（上下两行，垂直居中）
         text_wrap = QVBoxLayout()
         text_wrap.setSpacing(2)
+        text_wrap.addStretch()
         name_label = QLabel(self.USER_NAME)
         name_label.setStyleSheet(SIDEBAR_USER_NAME)
-        text_wrap.addWidget(name_label)
+        text_wrap.addWidget(name_label, alignment=Qt.AlignCenter)
         role_label = QLabel("管理员")
         role_label.setStyleSheet(SIDEBAR_USER_ROLE)
-        text_wrap.addWidget(role_label)
+        text_wrap.addWidget(role_label, alignment=Qt.AlignCenter)
         text_wrap.addStretch()
         user_layout.addLayout(text_wrap, stretch=1)
 
