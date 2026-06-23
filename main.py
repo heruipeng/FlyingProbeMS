@@ -452,50 +452,48 @@ class FlyPinWindow(QMainWindow):
         user_section = QFrame()
         user_section.setObjectName("userSection")
         user_section.setStyleSheet(SIDEBAR_USER_SECTION)
-        user_section.setFixedHeight(120)
+        user_section.setFixedHeight(130)
         user_layout = QVBoxLayout(user_section)
-        user_layout.setContentsMargins(16, 20, 16, 16)
-        user_layout.setSpacing(6)
+        user_layout.setContentsMargins(0, 0, 0, 0)
+        user_layout.setSpacing(0)
 
-        # 头像圆（用 QLabel 模拟圆形字母头像）
+        # 头像居中
         avatar = QLabel()
-        avatar.setFixedSize(48, 48)
+        avatar.setFixedSize(56, 56)
         avatar.setAlignment(Qt.AlignCenter)
         avatar_text = self.USER_NAME[0] if self.USER_NAME else "?"
         avatar.setStyleSheet(f"""
             QLabel {{
-                background: rgba(255,255,255,0.3);
+                background: rgba(255,255,255,0.25);
                 color: white;
                 font-family: 微软雅黑;
-                font-size: 20pt;
+                font-size: 24pt;
                 font-weight: bold;
-                border-radius: 24px;
+                border-radius: 28px;
             }}
         """)
         avatar.setText(avatar_text)
-        user_layout.addWidget(avatar)
+
+        avatar_wrap = QHBoxLayout()
+        avatar_wrap.setContentsMargins(0, 22, 0, 0)
+        avatar_wrap.addStretch()
+        avatar_wrap.addWidget(avatar)
+        avatar_wrap.addStretch()
+        user_layout.addLayout(avatar_wrap)
+        user_layout.addSpacing(10)
 
         name_label = QLabel(self.USER_NAME)
         name_label.setStyleSheet(SIDEBAR_USER_NAME)
+        name_label.setAlignment(Qt.AlignCenter)
         user_layout.addWidget(name_label)
 
         role_label = QLabel("管理员")
         role_label.setStyleSheet(SIDEBAR_USER_ROLE)
+        role_label.setAlignment(Qt.AlignCenter)
         user_layout.addWidget(role_label)
 
         sidebar_layout.addWidget(user_section)
-
-        # ---- 菜单区标题 ----
-        menu_header = QLabel("  导航菜单")
-        menu_header.setStyleSheet(f"""
-            QLabel {{
-                color: {GRAY_TEXT_LIGHT};
-                font-family: 微软雅黑;
-                font-size: 9pt;
-                padding: 14px 16px 6px 16px;
-            }}
-        """)
-        sidebar_layout.addWidget(menu_header)
+        sidebar_layout.addSpacing(10)
 
         # 导航按钮
         self.btn_nav_task = QPushButton("📋  任务管理")
