@@ -1014,15 +1014,15 @@ class FlyPinWindow(QMainWindow):
         self.card_convert_pending = StatCard("待转换", "0", "#A0522D", "🔄")
         self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
-        self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
-        self.card_avg_time = StatCard("平均耗时min", "0", "#EC4899", "⏱️")
+        self.card_avg_time_2w = StatCard("2W平均耗时min", "0", "#EC4899", "⏱️")
+        self.card_avg_time_4w = StatCard("4W平均耗时min", "0", "#F472B6", "⏱️")
         self.card_points_2w = StatCard("2W 总点数/均PCS", "0", "#06B6D4", "🔌")
         self.card_points_4w = StatCard("4W 总点数/均PCS", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_not_run, self.card_make_pending,
                      self.card_check_pending, self.card_convert_pending,
                      self.card_erp_upload, self.card_completed,
-                     self.card_completion_rate, self.card_avg_time,
+                     self.card_avg_time_2w, self.card_avg_time_4w,
                      self.card_points_2w, self.card_points_4w]:
             cards_layout.addWidget(card)
 
@@ -1474,10 +1474,14 @@ class FlyPinWindow(QMainWindow):
         erp_upload = 0       # 待上传ERP
         total_2w = 0
         total_4w = 0
-        total_time = 0
-        time_count = 0
-        total_check_time = 0
-        check_time_count = 0
+        total_time_2w = 0
+        time_2w_count = 0
+        total_check_2w_time = 0
+        check_2w_time_count = 0
+        total_time_4w = 0
+        time_4w_count = 0
+        total_check_4w_time = 0
+        check_4w_time_count = 0
         get_status = self.get_work_status
         average_value_2w = 0
         average_value_4w = 0
@@ -1504,18 +1508,27 @@ class FlyPinWindow(QMainWindow):
                     average_value_4w += 1
             except:
                 pass
-            t = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
-            if t > 0:
-                total_time += t
-                time_count += 1
-            ct = self._parse_output_time(r.get("TOTAL_CHECK_MS_2W"))
-            if ct > 0:
-                total_check_time += ct
-                check_time_count += 1
+            t2w = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_2W"))
+            if t2w > 0:
+                total_time_2w += t2w
+                time_2w_count += 1
+            ct2w = self._parse_output_time(r.get("TOTAL_CHECK_MS_2W"))
+            if ct2w > 0:
+                total_check_2w_time += ct2w
+                check_2w_time_count += 1
+            t4w = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_4W"))
+            if t4w > 0:
+                total_time_4w += t4w
+                time_4w_count += 1
+            ct4w = self._parse_output_time(r.get("TOTAL_CHECK_MS_4W"))
+            if ct4w > 0:
+                total_check_4w_time += ct4w
+                check_4w_time_count += 1
 
-        rate = f"{completed * 100 // total}%" if total > 0 else "0%"
-        out_avg = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
-        chk_avg = f"{total_check_time / check_time_count:.1f}" if check_time_count > 0 else "0"
+        out_2w_avg = f"{total_time_2w / time_2w_count:.1f}" if time_2w_count > 0 else "0"
+        chk_2w_avg = f"{total_check_2w_time / check_2w_time_count:.1f}" if check_2w_time_count > 0 else "0"
+        out_4w_avg = f"{total_time_4w / time_4w_count:.1f}" if time_4w_count > 0 else "0"
+        chk_4w_avg = f"{total_check_4w_time / check_4w_time_count:.1f}" if check_4w_time_count > 0 else "0"
         self.card_total.set_value(total)
         self.card_not_run.set_value(not_run)
         self.card_make_pending.set_value(make_pending)
@@ -1523,8 +1536,8 @@ class FlyPinWindow(QMainWindow):
         self.card_convert_pending.set_value(convert_pending)
         self.card_erp_upload.set_value(erp_upload)
         self.card_completed.set_value(completed)
-        self.card_completion_rate.set_value(rate)
-        self.card_avg_time.set_double_value(f"制作 {out_avg}", f"检查 {chk_avg}")
+        self.card_avg_time_2w.set_double_value(f"制作 {out_2w_avg}", f"检查 {chk_2w_avg}")
+        self.card_avg_time_4w.set_double_value(f"制作 {out_4w_avg}", f"检查 {chk_4w_avg}")
         self.card_points_2w.set_double_value(f"{total_2w:,}", f"{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}/PCS")
         self.card_points_4w.set_double_value(f"{total_4w:,}", f"{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}/PCS")
 
