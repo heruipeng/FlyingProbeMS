@@ -1515,16 +1515,23 @@ class FlyPinWindow(QMainWindow):
                 time_2w_count += 1
             ct2w = self._parse_output_time(r.get("TOTAL_CHECK_MS_2W"))
             if ct2w > 0:
-                total_check_2w_time += ct2w
-                check_2w_time_count += 1
+                # 输出完成时间==检查完成时间，说明未实际检查，不计入检查耗时
+                out_finish_2w = str(r.get("OUTPUT_FINISH_TIME_2W") or "")
+                chk_finish_2w = str(r.get("CHECK_FINISH_TIME_2W") or "")
+                if out_finish_2w != chk_finish_2w:
+                    total_check_2w_time += ct2w
+                    check_2w_time_count += 1
             t4w = self._parse_output_time(r.get("TOTAL_OUTPUT_MS_4W"))
             if t4w > 0:
                 total_time_4w += t4w
                 time_4w_count += 1
             ct4w = self._parse_output_time(r.get("TOTAL_CHECK_MS_4W"))
             if ct4w > 0:
-                total_check_4w_time += ct4w
-                check_4w_time_count += 1
+                out_finish_4w = str(r.get("OUTPUT_FINISH_TIME_4W") or "")
+                chk_finish_4w = str(r.get("CHECK_FINISH_TIME_4W") or "")
+                if out_finish_4w != chk_finish_4w:
+                    total_check_4w_time += ct4w
+                    check_4w_time_count += 1
 
         out_2w_avg = f"{total_time_2w / time_2w_count:.1f}" if time_2w_count > 0 else "0"
         chk_2w_avg = f"{total_check_2w_time / check_2w_time_count:.1f}" if check_2w_time_count > 0 else "0"
