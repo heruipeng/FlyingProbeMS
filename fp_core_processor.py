@@ -50,6 +50,7 @@ import psutil
 # 弹窗依赖
 import ctypes
 from ctypes import wintypes
+import pyautogui
 
 # 项目内部依赖
 import package.Oracle_DB as Oracle_DB
@@ -885,8 +886,8 @@ class FlyingProbeCoreProcessor:
             else:
                 # 保存资料
                 self.gen.COM(f'save_job,job={job},override=no')
-
         else:
+            # self._sel_pad2line()
             self.create_flying_test_points(job, mode)
             if not self.is_auto_mode():
                 # show_error_message('检查测试点',f'{mode}测试点创建完成，请检查')
@@ -902,6 +903,26 @@ class FlyingProbeCoreProcessor:
         logger.info(f"=============== 【{mode}】资料输出完成 ===============\n")
         return test_point
 
+    def _sel_pad2line(self):
+        self.gen.COM(f'ezfix_open_job,job={self.internal_job}')
+        self.gen.COM(f'ezfix_open_step,job={self.internal_job},step={self.run_step},open_top=no')
+        self.gen.COM('affected_layer,name=,mode=all,affected=no')
+        self.gen.COM('filter_reset,filter_name=popup')
+        info = self.gen.DO_INFO(f'-t matrix -e {self.internal_job}/matrix -d ROW -m script')
+        for n in range(len(info['gROWname'])):
+            layer_name = info['gROWname'][n]
+            context = info['gROWcontext'][n]
+            side = info['gROWside'][n]
+            if context == 'board' and info['gROWlayer_type'][n] == 'signal' and side in ['top','bottom']:
+                self.gen.COM(f'ezfix_display_layer,name={layer_name},display=yes')
+                # 直接触发windows本地快捷键P/T,选择PAD，然后PAD2LINE
+                # 按下字母P
+                pyautogui.press('P')
+                time.sleep(1)
+                pyautogui.press('T')
+                self.gen.COM(f'ezfix_display_layer,name={layer_name},display=no')
+        self.gen.COM('filter_reset,filter_name=popup')
+
     def clean_existing_job(self, job):
         """清理已存在的旧工程，避免冲突"""
         if self.gen.DO_INFO(f'-t job -e {job} -d EXISTS -m script')['gEXISTS'] == 'yes':
@@ -912,7 +933,7 @@ class FlyingProbeCoreProcessor:
 
     def import_job_from_tgz(self,job):
         """从TGZ文件导入工程"""
-        tgz_file = self._build_tgz_file_path(job if self.output_mode == '2w' else job.replace('-4w',''))
+        tgz_file = self._build_tgz_file_path(job)
         logger.info(f"【{self.raw_job}】开始导入TGZ：{tgz_file}")
         if not os.path.exists(tgz_file):
             err = f"TGZ文件不存在：{tgz_file}"
@@ -1086,7 +1107,7 @@ class FlyingProbeCoreProcessor:
 
         if self.mode in ['check','input']:
             # show_error_message("温馨提示", '请认真核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
-            self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
+            # self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
             return
 
         if self.is_auto_mode():
@@ -1107,11 +1128,12 @@ class FlyingProbeCoreProcessor:
 
         if check_net and self.is_auto_mode():
             self.run_net_compare(self.run_step, '工作稿')
-            layer_map = self.import_original_gerber_layers()
-            if layer_map:
-                self.restore_original_layer_to_workstep(layer_map)
-            else:
-                self.import_orig()
+            # layer_map = self.import_original_gerber_layers()
+            # if layer_map:
+            #     self.restore_original_layer_to_workstep(layer_map)
+            # else:
+            #     self.import_orig()
+            self.import_orig()
             self._dfm_nfp_removal()
             self._add_drill_attr()
             self._delete_outside_features()

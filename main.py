@@ -1635,7 +1635,7 @@ class FlyPinWindow(QMainWindow):
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
-            st_item = table.item(i, 4)
+            st_item = table.item(i, 3)
             if st_item:
                 st_item.setForeground(status_color(status))
 
