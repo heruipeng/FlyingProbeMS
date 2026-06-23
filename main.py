@@ -289,8 +289,23 @@ class StatCard(QFrame):
         self.value_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         layout.addWidget(self.value_label)
 
+        # 双行值（默认隐藏）
+        self.value_label2 = QLabel("")
+        self.value_label2.setFont(QFont("微软雅黑", 11, QFont.Bold))
+        self.value_label2.setStyleSheet(f"color:{color};")
+        self.value_label2.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.value_label2.hide()
+        layout.addWidget(self.value_label2)
+
     def set_value(self, val):
         self.value_label.setText(str(val))
+        self.value_label2.hide()
+
+    def set_double_value(self, line1, line2):
+        self.value_label.setFont(QFont("微软雅黑", 13, QFont.Bold))
+        self.value_label.setText(str(line1))
+        self.value_label2.setText(str(line2))
+        self.value_label2.show()
 
 
 # ===================== 主界面 =====================
@@ -999,7 +1014,7 @@ class FlyPinWindow(QMainWindow):
         self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
-        self.card_avg_time = StatCard("平均耗时min", "0", "#EC4899", "⏱️")
+        self.card_avg_time = StatCard("制作/检查 均耗时min", "0", "#EC4899", "⏱️")
         self.card_points_2w = StatCard("2W点数/均PCS", "0", "#06B6D4", "🔌")
         self.card_points_4w = StatCard("4W点数/均PCS", "0", "#F59E0B", "🔋")
 
@@ -1460,6 +1475,8 @@ class FlyPinWindow(QMainWindow):
         total_4w = 0
         total_time = 0
         time_count = 0
+        total_check_time = 0
+        check_time_count = 0
         get_status = self.get_work_status
         average_value_2w = 0
         average_value_4w = 0
@@ -1490,9 +1507,14 @@ class FlyPinWindow(QMainWindow):
             if t > 0:
                 total_time += t
                 time_count += 1
+            ct = self._parse_output_time(r.get("TOTAL_CHECK_MS_2W"))
+            if ct > 0:
+                total_check_time += ct
+                check_time_count += 1
 
         rate = f"{completed * 100 // total}%" if total > 0 else "0%"
-        avg_t = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
+        out_avg = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
+        chk_avg = f"{total_check_time / check_time_count:.1f}" if check_time_count > 0 else "0"
         self.card_total.set_value(total)
         self.card_not_run.set_value(not_run)
         self.card_make_pending.set_value(make_pending)
@@ -1501,7 +1523,7 @@ class FlyPinWindow(QMainWindow):
         self.card_erp_upload.set_value(erp_upload)
         self.card_completed.set_value(completed)
         self.card_completion_rate.set_value(rate)
-        self.card_avg_time.set_value(str(avg_t))
+        self.card_avg_time.set_double_value(f"制作 {out_avg}", f"检查 {chk_avg}")
         self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}")
         self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}")
 
