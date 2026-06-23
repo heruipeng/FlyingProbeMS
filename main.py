@@ -448,18 +448,18 @@ class FlyPinWindow(QMainWindow):
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
 
-        # ---- 用户信息头部（蓝色背景 + 头像 + 用户名）----
+        # ---- 用户信息头部（蓝色背景 + 头像左 + 用户名/角色右）----
         user_section = QFrame()
         user_section.setObjectName("userSection")
         user_section.setStyleSheet(SIDEBAR_USER_SECTION)
-        user_section.setFixedHeight(130)
-        user_layout = QVBoxLayout(user_section)
-        user_layout.setContentsMargins(0, 0, 0, 0)
-        user_layout.setSpacing(0)
+        user_section.setFixedHeight(80)
+        user_layout = QHBoxLayout(user_section)
+        user_layout.setContentsMargins(16, 0, 16, 0)
+        user_layout.setSpacing(12)
 
-        # 头像居中
+        # 左侧圆形头像
         avatar = QLabel()
-        avatar.setFixedSize(56, 56)
+        avatar.setFixedSize(44, 44)
         avatar.setAlignment(Qt.AlignCenter)
         avatar_text = self.USER_NAME[0] if self.USER_NAME else "?"
         avatar.setStyleSheet(f"""
@@ -467,33 +467,28 @@ class FlyPinWindow(QMainWindow):
                 background: rgba(255,255,255,0.25);
                 color: white;
                 font-family: 微软雅黑;
-                font-size: 24pt;
+                font-size: 20pt;
                 font-weight: bold;
-                border-radius: 28px;
+                border-radius: 22px;
             }}
         """)
         avatar.setText(avatar_text)
+        user_layout.addWidget(avatar)
 
-        avatar_wrap = QHBoxLayout()
-        avatar_wrap.setContentsMargins(0, 22, 0, 0)
-        avatar_wrap.addStretch()
-        avatar_wrap.addWidget(avatar)
-        avatar_wrap.addStretch()
-        user_layout.addLayout(avatar_wrap)
-        user_layout.addSpacing(10)
-
+        # 右侧文字（上下两行）
+        text_wrap = QVBoxLayout()
+        text_wrap.setSpacing(2)
         name_label = QLabel(self.USER_NAME)
         name_label.setStyleSheet(SIDEBAR_USER_NAME)
-        name_label.setAlignment(Qt.AlignCenter)
-        user_layout.addWidget(name_label)
-
+        text_wrap.addWidget(name_label)
         role_label = QLabel("管理员")
         role_label.setStyleSheet(SIDEBAR_USER_ROLE)
-        role_label.setAlignment(Qt.AlignCenter)
-        user_layout.addWidget(role_label)
+        text_wrap.addWidget(role_label)
+        text_wrap.addStretch()
+        user_layout.addLayout(text_wrap, stretch=1)
 
         sidebar_layout.addWidget(user_section)
-        sidebar_layout.addSpacing(10)
+        sidebar_layout.addSpacing(6)
 
         # 导航按钮
         self.btn_nav_task = QPushButton("📋  任务管理")
