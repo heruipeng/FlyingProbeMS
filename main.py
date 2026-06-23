@@ -302,8 +302,9 @@ class StatCard(QFrame):
         self.value_label2.hide()
 
     def set_double_value(self, line1, line2):
-        self.value_label.setFont(QFont("微软雅黑", 13, QFont.Bold))
+        self.value_label.setFont(QFont("微软雅黑", 12, QFont.Bold))
         self.value_label.setText(str(line1))
+        self.value_label2.setFont(QFont("微软雅黑", 12, QFont.Bold))
         self.value_label2.setText(str(line2))
         self.value_label2.show()
 
@@ -1014,9 +1015,9 @@ class FlyPinWindow(QMainWindow):
         self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
-        self.card_avg_time = StatCard("制作/检查 均耗时min", "0", "#EC4899", "⏱️")
-        self.card_points_2w = StatCard("2W点数/均PCS", "0", "#06B6D4", "🔌")
-        self.card_points_4w = StatCard("4W点数/均PCS", "0", "#F59E0B", "🔋")
+        self.card_avg_time = StatCard("平均耗时min", "0", "#EC4899", "⏱️")
+        self.card_points_2w = StatCard("2W 总点数/均PCS", "0", "#06B6D4", "🔌")
+        self.card_points_4w = StatCard("4W 总点数/均PCS", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_not_run, self.card_make_pending,
                      self.card_check_pending, self.card_convert_pending,
@@ -1524,8 +1525,8 @@ class FlyPinWindow(QMainWindow):
         self.card_completed.set_value(completed)
         self.card_completion_rate.set_value(rate)
         self.card_avg_time.set_double_value(f"制作 {out_avg}", f"检查 {chk_avg}")
-        self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}")
-        self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}")
+        self.card_points_2w.set_double_value(f"{total_2w:,}", f"{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}/PCS")
+        self.card_points_4w.set_double_value(f"{total_4w:,}", f"{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}/PCS")
 
     def current_report_view(self):
         """根据当前视图索引渲染表格（从缓存读取）"""
