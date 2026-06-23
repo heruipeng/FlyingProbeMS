@@ -1633,7 +1633,7 @@ class FlyPinWindow(QMainWindow):
 
             for col, txt in enumerate(items_data):
                 cell = QTableWidgetItem(txt)
-                cell.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter if col in (6, 18) else Qt.AlignCenter)
+                cell.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter if col in (5, 6, 18) else Qt.AlignCenter)
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
