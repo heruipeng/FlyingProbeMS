@@ -155,27 +155,53 @@ QFrame#sidebar {{
 }}
 """
 
+SIDEBAR_USER_SECTION = f"""
+QFrame#userSection {{
+    background: {PRIMARY_COLOR};
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+}}
+"""
+
+SIDEBAR_USER_NAME = f"""
+QLabel {{
+    color: {WHITE};
+    font-family: 微软雅黑;
+    font-size: 14pt;
+    font-weight: bold;
+}}
+"""
+
+SIDEBAR_USER_ROLE = f"""
+QLabel {{
+    color: rgba(255,255,255,0.85);
+    font-family: 微软雅黑;
+    font-size: 9pt;
+}}
+"""
+
 NAV_BTN_NORMAL = f"""
 QPushButton {{
     background: {WHITE};
-    color: {GRAY_TEXT_DARK};
+    color: {GRAY_TEXT_NORMAL};
     border: none;
-    border-bottom: 1px solid {GRAY_BORDER};
+    border-left: 3px solid transparent;
     border-radius: 0px;
     font-family: 微软雅黑;
     font-size: 11pt;
-    font-weight: bold;
     text-align: left;
-    padding: 16px 20px;
+    padding: 14px 20px;
 }}
 QPushButton:hover {{
     background: {PRIMARY_LIGHT};
     color: {PRIMARY_COLOR};
+    border-left: 3px solid {PRIMARY_COLOR};
 }}
 QPushButton:checked {{
     background: {PRIMARY_LIGHT};
     color: {PRIMARY_COLOR};
     border-left: 3px solid {PRIMARY_COLOR};
+    font-weight: bold;
 }}
 """
 
@@ -416,23 +442,60 @@ class FlyPinWindow(QMainWindow):
         # ========== 左侧导航菜单（自定义侧边栏）==========
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(200)
+        sidebar.setFixedWidth(210)
         sidebar.setStyleSheet(SIDEBAR_STYLE)
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
 
-        # 顶部标题
-        header_label = QLabel("📋 导航菜单")
-        header_label.setStyleSheet(SIDEBAR_HEADER_STYLE)
-        header_label.setFixedHeight(52)
-        sidebar_layout.addWidget(header_label)
+        # ---- 用户信息头部（蓝色背景 + 头像 + 用户名）----
+        user_section = QFrame()
+        user_section.setObjectName("userSection")
+        user_section.setStyleSheet(SIDEBAR_USER_SECTION)
+        user_section.setFixedHeight(120)
+        user_layout = QVBoxLayout(user_section)
+        user_layout.setContentsMargins(16, 20, 16, 16)
+        user_layout.setSpacing(6)
 
-        # 分隔线
-        sep = QFrame()
-        sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet(f"QFrame{{color:{GRAY_BORDER};margin:0 20px;}}")
-        sidebar_layout.addWidget(sep)
+        # 头像圆（用 QLabel 模拟圆形字母头像）
+        avatar = QLabel()
+        avatar.setFixedSize(48, 48)
+        avatar.setAlignment(Qt.AlignCenter)
+        avatar_text = self.USER_NAME[0] if self.USER_NAME else "?"
+        avatar.setStyleSheet(f"""
+            QLabel {{
+                background: rgba(255,255,255,0.3);
+                color: white;
+                font-family: 微软雅黑;
+                font-size: 20pt;
+                font-weight: bold;
+                border-radius: 24px;
+            }}
+        """)
+        avatar.setText(avatar_text)
+        user_layout.addWidget(avatar)
+
+        name_label = QLabel(self.USER_NAME)
+        name_label.setStyleSheet(SIDEBAR_USER_NAME)
+        user_layout.addWidget(name_label)
+
+        role_label = QLabel("管理员")
+        role_label.setStyleSheet(SIDEBAR_USER_ROLE)
+        user_layout.addWidget(role_label)
+
+        sidebar_layout.addWidget(user_section)
+
+        # ---- 菜单区标题 ----
+        menu_header = QLabel("  导航菜单")
+        menu_header.setStyleSheet(f"""
+            QLabel {{
+                color: {GRAY_TEXT_LIGHT};
+                font-family: 微软雅黑;
+                font-size: 9pt;
+                padding: 14px 16px 6px 16px;
+            }}
+        """)
+        sidebar_layout.addWidget(menu_header)
 
         # 导航按钮
         self.btn_nav_task = QPushButton("📋  任务管理")
@@ -442,8 +505,8 @@ class FlyPinWindow(QMainWindow):
         self.btn_nav_report.setCheckable(True)
         self.btn_nav_task.setChecked(True)
 
-        self.btn_nav_task.setFixedHeight(50)
-        self.btn_nav_report.setFixedHeight(50)
+        self.btn_nav_task.setFixedHeight(46)
+        self.btn_nav_report.setFixedHeight(46)
 
         self.btn_nav_task.setStyleSheet(NAV_BTN_NORMAL)
         self.btn_nav_report.setStyleSheet(NAV_BTN_NORMAL)
