@@ -449,7 +449,7 @@ class LoginWindow(QWidget):
             return
 
         sql = f"""
-        SELECT USER_ID,PASS_WORD,USER_NAME,STATUS
+        SELECT USER_ID,PASS_WORD,USER_NAME,USER_ROLE,STATUS
         FROM INP_FLYPIN_USER
         WHERE USER_ID = '{user_id}'
         """
@@ -471,13 +471,14 @@ class LoginWindow(QWidget):
         save_user(user_id, pwd)
 
         # QMessageBox.information(self, "登录成功", f"欢迎你：{row['USER_NAME']}")
-        self.open_main_window(user_id, row['USER_NAME'])
+        self.open_main_window(user_id, row['USER_NAME'], row['USER_ROLE'])
         self.close()
 
-    def open_main_window(self, login_user, user_name):
+    def open_main_window(self, login_user, user_name, user_role):
         self.main_win = FlyPinWindow(
             login_user=login_user,
             user_name=user_name,
+            user_role=user_role,
             soft_name=SOFTWARE_NAME,
             soft_ver=SOFTWARE_VERSION,
             release_date=release_date,

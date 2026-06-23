@@ -337,11 +337,12 @@ class StatCard(QFrame):
 
 # ===================== 主界面 =====================
 class FlyPinWindow(QMainWindow):
-    def __init__(self, login_user, user_name, soft_name, soft_ver, release_date, developer, copyright_info):
+    def __init__(self, login_user, user_name, user_role, soft_name, soft_ver, release_date, developer, copyright_info):
         super().__init__()
         self.init_oracle_env()
         self.LOGIN_USER = login_user
         self.USER_NAME = user_name
+        self.user_role = user_role
         self.SOFTWARE_NAME = soft_name
         self.SOFTWARE_VERSION = soft_ver
         self.release_date = release_date
@@ -442,7 +443,7 @@ class FlyPinWindow(QMainWindow):
         # ========== 左侧导航菜单（自定义侧边栏）==========
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
-        sidebar.setFixedWidth(210)
+        sidebar.setFixedWidth(160)
         sidebar.setStyleSheet(SIDEBAR_STYLE)
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
@@ -482,7 +483,7 @@ class FlyPinWindow(QMainWindow):
         name_label = QLabel(self.USER_NAME)
         name_label.setStyleSheet(SIDEBAR_USER_NAME)
         text_wrap.addWidget(name_label, alignment=Qt.AlignCenter)
-        role_label = QLabel("管理员")
+        role_label = QLabel(self.user_role)
         role_label.setStyleSheet(SIDEBAR_USER_ROLE)
         text_wrap.addWidget(role_label, alignment=Qt.AlignCenter)
         text_wrap.addStretch()
@@ -2838,6 +2839,6 @@ class FlyPinWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    win = FlyPinWindow("","Admin","飞针测试资料管理系统","V2.1","2026-01-01","rphe","SUNTAK SOFTWARE GROUP © All Rights Reserved")
+    win = FlyPinWindow("","Admin",'管理员',"飞针测试资料管理系统","V2.1","2026-01-01","rphe","SUNTAK SOFTWARE GROUP © All Rights Reserved")
     win.show()
     sys.exit(app.exec_())
