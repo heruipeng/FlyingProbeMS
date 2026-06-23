@@ -265,14 +265,15 @@ class StatCard(QFrame):
                 border-color: {color};
             }}
         """)
-        self.setMinimumHeight(110)
+        self.setMinimumHeight(78)
+        self.setMinimumWidth(105)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(6)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(2)
 
         title_layout = QHBoxLayout()
         icon_label = QLabel(icon)
-        icon_label.setFont(QFont("微软雅黑", 16))
+        icon_label.setFont(QFont("微软雅黑", 13))
         title_layout.addWidget(icon_label)
 
         title_label = QLabel(title)
@@ -283,7 +284,7 @@ class StatCard(QFrame):
         layout.addLayout(title_layout)
 
         self.value_label = QLabel(str(value))
-        self.value_label.setFont(LARGE_FONT)
+        self.value_label.setFont(QFont("微软雅黑", 16, QFont.Bold))
         self.value_label.setStyleSheet(f"color:{color};")
         self.value_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         layout.addWidget(self.value_label)
@@ -983,12 +984,17 @@ class FlyPinWindow(QMainWindow):
 
         layout.addWidget(filter_frame)
 
-        # ---- 统计卡片（一行：7个状态卡片 + 4个统计卡片）----
+        # ---- 统计卡片（两行：7个状态卡片 → 4个统计卡片）----
         cards_frame = QFrame()
         cards_frame.setStyleSheet("QFrame{background:transparent;border:none;}")
-        cards_layout = QHBoxLayout(cards_frame)
-        cards_layout.setSpacing(6)
-        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_wrapper = QVBoxLayout(cards_frame)
+        cards_wrapper.setSpacing(6)
+        cards_wrapper.setContentsMargins(0, 0, 0, 0)
+
+        # 上行：状态数量卡片
+        row1 = QHBoxLayout()
+        row1.setSpacing(6)
+        row1.setContentsMargins(0, 0, 0, 0)
 
         self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
         self.card_not_run = StatCard("待后台处理", "0", "#909399", "⛔")
@@ -997,17 +1003,28 @@ class FlyPinWindow(QMainWindow):
         self.card_convert_pending = StatCard("待转换", "0", "#A0522D", "🔄")
         self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
+
+        for card in [self.card_total, self.card_not_run, self.card_make_pending,
+                     self.card_check_pending, self.card_convert_pending,
+                     self.card_erp_upload, self.card_completed]:
+            row1.addWidget(card)
+        cards_wrapper.addLayout(row1)
+
+        # 下行：统计指标卡片
+        row2 = QHBoxLayout()
+        row2.setSpacing(6)
+        row2.setContentsMargins(0, 0, 0, 0)
+
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
         self.card_avg_time = StatCard("平均耗时min", "0", "#EC4899", "⏱️")
         self.card_points_2w = StatCard("2W点数/均PCS", "0", "#06B6D4", "🔌")
         self.card_points_4w = StatCard("4W点数/均PCS", "0", "#F59E0B", "🔋")
 
-        for card in [self.card_total, self.card_not_run, self.card_make_pending,
-                     self.card_check_pending, self.card_convert_pending,
-                     self.card_erp_upload, self.card_completed,
-                     self.card_completion_rate, self.card_avg_time,
+        for card in [self.card_completion_rate, self.card_avg_time,
                      self.card_points_2w, self.card_points_4w]:
-            cards_layout.addWidget(card)
+            row2.addWidget(card)
+        row2.addStretch()
+        cards_wrapper.addLayout(row2)
 
         layout.addWidget(cards_frame)
 
