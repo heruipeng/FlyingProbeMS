@@ -983,17 +983,12 @@ class FlyPinWindow(QMainWindow):
 
         layout.addWidget(filter_frame)
 
-        # ---- 统计卡片（两行：7个状态卡片 + 4个统计卡片）----
+        # ---- 统计卡片（一行：7个状态卡片 + 4个统计卡片）----
         cards_frame = QFrame()
         cards_frame.setStyleSheet("QFrame{background:transparent;border:none;}")
-        cards_wrapper = QVBoxLayout(cards_frame)
-        cards_wrapper.setSpacing(10)
-        cards_wrapper.setContentsMargins(0, 0, 0, 0)
-
-        # ---- 第一行：各状态数量卡片 ----
-        status_row = QHBoxLayout()
-        status_row.setSpacing(10)
-        status_row.setContentsMargins(0, 0, 0, 0)
+        cards_layout = QHBoxLayout(cards_frame)
+        cards_layout.setSpacing(6)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
 
         self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
         self.card_not_run = StatCard("待后台处理", "0", "#909399", "⛔")
@@ -1002,28 +997,17 @@ class FlyPinWindow(QMainWindow):
         self.card_convert_pending = StatCard("待转换", "0", "#A0522D", "🔄")
         self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
+        self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
+        self.card_avg_time = StatCard("平均耗时min", "0", "#EC4899", "⏱️")
+        self.card_points_2w = StatCard("2W点数/均PCS", "0", "#06B6D4", "🔌")
+        self.card_points_4w = StatCard("4W点数/均PCS", "0", "#F59E0B", "🔋")
 
         for card in [self.card_total, self.card_not_run, self.card_make_pending,
                      self.card_check_pending, self.card_convert_pending,
-                     self.card_erp_upload, self.card_completed]:
-            status_row.addWidget(card)
-        cards_wrapper.addLayout(status_row)
-
-        # ---- 第二行：统计指标卡片 ----
-        stats_row = QHBoxLayout()
-        stats_row.setSpacing(10)
-        stats_row.setContentsMargins(0, 0, 0, 0)
-
-        self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
-        self.card_avg_time = StatCard("平均耗时", "0 min", "#EC4899", "⏱️")
-        self.card_points_2w = StatCard("2W输出总点数/平均PCS点数", "0", "#06B6D4", "🔌")
-        self.card_points_4w = StatCard("4W输出总点数/平均PCS点数", "0", "#F59E0B", "🔋")
-
-        for card in [self.card_completion_rate, self.card_avg_time,
+                     self.card_erp_upload, self.card_completed,
+                     self.card_completion_rate, self.card_avg_time,
                      self.card_points_2w, self.card_points_4w]:
-            stats_row.addWidget(card)
-        stats_row.addStretch()
-        cards_wrapper.addLayout(stats_row)
+            cards_layout.addWidget(card)
 
         layout.addWidget(cards_frame)
 
@@ -1516,7 +1500,7 @@ class FlyPinWindow(QMainWindow):
         self.card_erp_upload.set_value(erp_upload)
         self.card_completed.set_value(completed)
         self.card_completion_rate.set_value(rate)
-        self.card_avg_time.set_value(f"{avg_t} min")
+        self.card_avg_time.set_value(str(avg_t))
         self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}")
         self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}")
 
