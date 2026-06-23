@@ -983,26 +983,47 @@ class FlyPinWindow(QMainWindow):
 
         layout.addWidget(filter_frame)
 
-        # ---- 统计卡片（8个）----
+        # ---- 统计卡片（两行：7个状态卡片 + 4个统计卡片）----
         cards_frame = QFrame()
         cards_frame.setStyleSheet("QFrame{background:transparent;border:none;}")
-        cards_layout = QHBoxLayout(cards_frame)
-        cards_layout.setSpacing(12)
-        cards_layout.setContentsMargins(0, 0, 0, 0)
+        cards_wrapper = QVBoxLayout(cards_frame)
+        cards_wrapper.setSpacing(10)
+        cards_wrapper.setContentsMargins(0, 0, 0, 0)
+
+        # ---- 第一行：各状态数量卡片 ----
+        status_row = QHBoxLayout()
+        status_row.setSpacing(10)
+        status_row.setContentsMargins(0, 0, 0, 0)
 
         self.card_total = StatCard("总记录数", "0", PRIMARY_COLOR, "📦")
+        self.card_not_run = StatCard("待后台处理", "0", "#909399", "⛔")
+        self.card_make_pending = StatCard("待制作", "0", DANGER_COLOR, "🔧")
+        self.card_check_pending = StatCard("待检查", "0", WARNING_COLOR, "🔍")
+        self.card_convert_pending = StatCard("待转换", "0", "#A0522D", "🔄")
+        self.card_erp_upload = StatCard("待上传ERP", "0", "#9B59B6", "📤")
         self.card_completed = StatCard("已完成", "0", SUCCESS_COLOR, "✅")
-        self.card_pending = StatCard("待制作", "0", WARNING_COLOR, "⏳")
-        self.card_not_run = StatCard("待后台处理", "0", DANGER_COLOR, "⛔")
+
+        for card in [self.card_total, self.card_not_run, self.card_make_pending,
+                     self.card_check_pending, self.card_convert_pending,
+                     self.card_erp_upload, self.card_completed]:
+            status_row.addWidget(card)
+        cards_wrapper.addLayout(status_row)
+
+        # ---- 第二行：统计指标卡片 ----
+        stats_row = QHBoxLayout()
+        stats_row.setSpacing(10)
+        stats_row.setContentsMargins(0, 0, 0, 0)
+
         self.card_completion_rate = StatCard("完成率", "0%", "#8B5CF6", "🎯")
         self.card_avg_time = StatCard("平均耗时", "0 min", "#EC4899", "⏱️")
         self.card_points_2w = StatCard("2W输出总点数/平均PCS点数", "0", "#06B6D4", "🔌")
         self.card_points_4w = StatCard("4W输出总点数/平均PCS点数", "0", "#F59E0B", "🔋")
 
-        for card in [self.card_total, self.card_completed, self.card_pending,
-                     self.card_not_run, self.card_completion_rate, self.card_avg_time,
+        for card in [self.card_completion_rate, self.card_avg_time,
                      self.card_points_2w, self.card_points_4w]:
-            cards_layout.addWidget(card)
+            stats_row.addWidget(card)
+        stats_row.addStretch()
+        cards_wrapper.addLayout(stats_row)
 
         layout.addWidget(cards_frame)
 
@@ -1082,11 +1103,12 @@ class FlyPinWindow(QMainWindow):
         self.report_factory_table = QTableWidget()
         self.report_factory_table.setFont(GLOBAL_FONT)
         self.report_factory_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.factory_headers = ["厂区", "总记录", "已完成", "待制作", "待后台处理", "待上传ERP",
-                                "完成率", "2W点数", "4W点数", "平均耗时(min)", "输出人TOP3"]
+        self.factory_headers = ["厂区", "总记录",
+                                "待后台处理", "待制作", "待检查", "待转换", "待上传ERP",
+                                "已完成", "完成率", "2W点数", "4W点数", "平均耗时(min)", "输出人TOP3"]
         self.report_factory_table.setColumnCount(len(self.factory_headers))
         self.report_factory_table.setHorizontalHeaderLabels(self.factory_headers)
-        fac_col_w = {0: 110, 1: 80, 2: 80, 3: 80, 4: 80, 5: 80, 6: 80, 7: 100, 8: 100, 9: 120, 10: 200}
+        fac_col_w = {0: 110, 1: 70, 2: 80, 3: 65, 4: 65, 5: 65, 6: 80, 7: 70, 8: 65, 9: 90, 10: 90, 11: 100, 12: 180}
         fhh = self.report_factory_table.horizontalHeader()
         for c, w in fac_col_w.items():
             self.report_factory_table.setColumnWidth(c, w)
@@ -1106,11 +1128,12 @@ class FlyPinWindow(QMainWindow):
         self.report_daily_table = QTableWidget()
         self.report_daily_table.setFont(GLOBAL_FONT)
         self.report_daily_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.daily_headers = ["日期", "记录数", "已完成", "待制作", "待后台处理", "完成率",
-                              "2W点数", "4W点数", "输出用户数"]
+        self.daily_headers = ["日期", "记录数",
+                              "待后台处理", "待制作", "待检查", "待转换", "待上传ERP",
+                              "已完成", "完成率", "2W点数", "4W点数", "输出用户数"]
         self.report_daily_table.setColumnCount(len(self.daily_headers))
         self.report_daily_table.setHorizontalHeaderLabels(self.daily_headers)
-        day_col_w = {0: 140, 1: 80, 2: 80, 3: 80, 4: 80, 5: 80, 6: 120, 7: 120, 8: 100}
+        day_col_w = {0: 120, 1: 70, 2: 75, 3: 60, 4: 60, 5: 60, 6: 80, 7: 65, 8: 60, 9: 100, 10: 100, 11: 85}
         dhh = self.report_daily_table.horizontalHeader()
         for c, w in day_col_w.items():
             self.report_daily_table.setColumnWidth(c, w)
@@ -1369,7 +1392,9 @@ class FlyPinWindow(QMainWindow):
             factory = FACTORY_ID_TO_NAME.get(org, org)
             if factory not in cache['factory_summary']:
                 cache['factory_summary'][factory] = {
-                    "total": 0, "completed": 0, "pending": 0, "not_run": 0, "converted": 0,
+                    "total": 0, "completed": 0,
+                    "not_run": 0, "make_pending": 0, "check_pending": 0,
+                    "convert_pending": 0, "erp_upload": 0,
                     "2w": 0, "4w": 0, "times": [], "operators": Counter()
                 }
             fm = cache['factory_summary'][factory]
@@ -1377,12 +1402,16 @@ class FlyPinWindow(QMainWindow):
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 fm["completed"] += 1
-            elif status in ("待转换", "待检查"):
-                fm["pending"] += 1
-            elif status in ("待后台处理", "待制作"):
+            elif status == "待后台处理":
                 fm["not_run"] += 1
-            if status == "待上传ERP":
-                fm["converted"] += 1
+            elif status == "待制作":
+                fm["make_pending"] += 1
+            elif status == "待检查":
+                fm["check_pending"] += 1
+            elif status == "待转换":
+                fm["convert_pending"] += 1
+            elif status == "待上传ERP":
+                fm["erp_upload"] += 1
             try:
                 fm["2w"] += int(r.get("TEST_POINT_2W") or 0)
                 fm["4w"] += int(r.get("TEST_POINT_4W") or 0)
@@ -1402,7 +1431,9 @@ class FlyPinWindow(QMainWindow):
             date_str = ct[:10] if ct else "未知"
             if date_str not in cache['daily_stats']:
                 cache['daily_stats'][date_str] = {
-                    "total": 0, "completed": 0, "pending": 0, "not_run": 0,
+                    "total": 0, "completed": 0,
+                    "not_run": 0, "make_pending": 0, "check_pending": 0,
+                    "convert_pending": 0, "erp_upload": 0,
                     "2w": 0, "4w": 0, "users": set()
                 }
             dm = cache['daily_stats'][date_str]
@@ -1410,10 +1441,16 @@ class FlyPinWindow(QMainWindow):
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 dm["completed"] += 1
-            elif status in ("待转换", "待检查"):
-                dm["pending"] += 1
-            elif status in ("待后台处理", "待制作"):
+            elif status == "待后台处理":
                 dm["not_run"] += 1
+            elif status == "待制作":
+                dm["make_pending"] += 1
+            elif status == "待检查":
+                dm["check_pending"] += 1
+            elif status == "待转换":
+                dm["convert_pending"] += 1
+            elif status == "待上传ERP":
+                dm["erp_upload"] += 1
             try:
                 dm["2w"] += int(r.get("TEST_POINT_2W") or 0)
                 dm["4w"] += int(r.get("TEST_POINT_4W") or 0)
@@ -1429,8 +1466,11 @@ class FlyPinWindow(QMainWindow):
         """更新统计卡片"""
         total = len(self.report_data)
         completed = 0
-        pending = 0
-        not_run = 0
+        not_run = 0          # 待后台处理
+        make_pending = 0     # 待制作
+        check_pending = 0    # 待检查
+        convert_pending = 0  # 待转换
+        erp_upload = 0       # 待上传ERP
         total_2w = 0
         total_4w = 0
         total_time = 0
@@ -1442,10 +1482,16 @@ class FlyPinWindow(QMainWindow):
             status = get_status(r.get("STATUS"))
             if status == "已完成":
                 completed += 1
-            elif status in ("待转换", "待检查"):
-                pending += 1
-            elif status in ("待后台处理", "待制作"):
+            elif status == "待后台处理":
                 not_run += 1
+            elif status == "待制作":
+                make_pending += 1
+            elif status == "待检查":
+                check_pending += 1
+            elif status == "待转换":
+                convert_pending += 1
+            elif status == "待上传ERP":
+                erp_upload += 1
             try:
                 total_2w += int(r.get("TEST_POINT_2W") or 0)
                 total_4w += int(r.get("TEST_POINT_4W") or 0)
@@ -1463,9 +1509,12 @@ class FlyPinWindow(QMainWindow):
         rate = f"{completed * 100 // total}%" if total > 0 else "0%"
         avg_t = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
         self.card_total.set_value(total)
-        self.card_completed.set_value(completed)
-        self.card_pending.set_value(pending)
         self.card_not_run.set_value(not_run)
+        self.card_make_pending.set_value(make_pending)
+        self.card_check_pending.set_value(check_pending)
+        self.card_convert_pending.set_value(convert_pending)
+        self.card_erp_upload.set_value(erp_upload)
+        self.card_completed.set_value(completed)
         self.card_completion_rate.set_value(rate)
         self.card_avg_time.set_value(f"{avg_t} min")
         self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}")
@@ -1579,9 +1628,11 @@ class FlyPinWindow(QMainWindow):
             top_ops = self._top_users(fm['operators'])
 
             row_data = [
-                fac, str(fm['total']), str(fm['completed']), str(fm['pending']),
-                str(fm['not_run']), str(fm['converted']), rate,
-                f"{fm['2w']:,}", f"{fm['4w']:,}", avg_t, top_ops
+                fac, str(fm['total']),
+                str(fm['not_run']), str(fm['make_pending']),
+                str(fm['check_pending']), str(fm['convert_pending']),
+                str(fm['erp_upload']), str(fm['completed']),
+                rate, f"{fm['2w']:,}", f"{fm['4w']:,}", avg_t, top_ops
             ]
             for col, txt in enumerate(row_data):
                 cell = QTableWidgetItem(txt)
@@ -1589,7 +1640,7 @@ class FlyPinWindow(QMainWindow):
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
-            rate_item = table.item(i, 6)
+            rate_item = table.item(i, 8)
             if rate_item:
                 try:
                     pct = int(rate.replace('%', ''))
@@ -1624,8 +1675,10 @@ class FlyPinWindow(QMainWindow):
             rate = f"{dm['completed'] * 100 // dm['total']}%" if dm['total'] > 0 else "0%"
 
             row_data = [
-                dt, str(dm['total']), str(dm['completed']),
-                str(dm['pending']), str(dm['not_run']),
+                dt, str(dm['total']),
+                str(dm['not_run']), str(dm['make_pending']),
+                str(dm['check_pending']), str(dm['convert_pending']),
+                str(dm['erp_upload']), str(dm['completed']),
                 rate, f"{dm['2w']:,}", f"{dm['4w']:,}",
                 str(len(dm['users']))
             ]
@@ -1635,7 +1688,7 @@ class FlyPinWindow(QMainWindow):
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
-            rate_item = table.item(i, 5)
+            rate_item = table.item(i, 7)
             if rate_item:
                 try:
                     pct = int(rate.replace('%', ''))
