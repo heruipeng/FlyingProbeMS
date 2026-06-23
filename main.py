@@ -1179,6 +1179,7 @@ class FlyPinWindow(QMainWindow):
         self.update_report_cards()
         self._precompute_report_cache()
         self.report_page = 1
+
         self.report_view_stack.setUpdatesEnabled(False)
         self.current_report_view()
         self.report_view_stack.setUpdatesEnabled(True)
@@ -1461,15 +1462,14 @@ class FlyPinWindow(QMainWindow):
 
         rate = f"{completed * 100 // total}%" if total > 0 else "0%"
         avg_t = f"{total_time / time_count:.1f}" if time_count > 0 else "0"
-
         self.card_total.set_value(total)
         self.card_completed.set_value(completed)
         self.card_pending.set_value(pending)
         self.card_not_run.set_value(not_run)
         self.card_completion_rate.set_value(rate)
         self.card_avg_time.set_value(f"{avg_t} min")
-        self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w/average_value_2w)}")
-        self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w/average_value_4w)}")
+        self.card_points_2w.set_value(f"{total_2w:,}/{int(total_2w / average_value_2w) if average_value_2w != 0 else 0}")
+        self.card_points_4w.set_value(f"{total_4w:,}/{int(total_4w / average_value_4w) if average_value_4w != 0 else 0}")
 
     def current_report_view(self):
         """根据当前视图索引渲染表格（从缓存读取）"""
