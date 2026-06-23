@@ -653,7 +653,7 @@ class FlyPinWindow(QMainWindow):
         # 右侧详情面板
         detail_frame = QFrame()
         detail_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
-        detail_frame.setFixedWidth(400)
+        detail_frame.setFixedWidth(530)
         detail_layout = QVBoxLayout(detail_frame)
         detail_layout.setContentsMargins(0,0,0,0)
         detail_layout.setSpacing(0)
@@ -1631,7 +1631,7 @@ class FlyPinWindow(QMainWindow):
 
             for col, txt in enumerate(items_data):
                 cell = QTableWidgetItem(txt)
-                cell.setTextAlignment(Qt.AlignCenter)
+                cell.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter if col in (6, 18) else Qt.AlignCenter)
                 cell.setBackground(bg)
                 table.setItem(i, col, cell)
 
@@ -2217,7 +2217,7 @@ class FlyPinWindow(QMainWindow):
             }
             for col, txt in item_map.items():
                 cell = QTableWidgetItem(txt)
-                cell.setTextAlignment(Qt.AlignCenter)
+                cell.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter if col == 7 else Qt.AlignCenter)
                 cell.setBackground(bg)
                 self.table.setItem(i, col, cell)
 
