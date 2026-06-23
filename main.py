@@ -424,7 +424,8 @@ class FlyPinWindow(QMainWindow):
     # ==================== 主界面（侧边导航 + StackedWidget 布局）====================
     def init_ui(self):
         now = datetime.now().strftime("%Y-%m-%d")
-        self.setWindowTitle(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {now}  当前用户:{self.USER_NAME}")
+        # self.setWindowTitle(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {now}  当前用户:{self.USER_NAME}")
+        self.setWindowTitle(f"{self.SOFTWARE_NAME} {self.SOFTWARE_VERSION} | {now}")
         self.resize(1600, 800)
         self.setMinimumSize(1400, 600)
         self.setFont(GLOBAL_FONT)
