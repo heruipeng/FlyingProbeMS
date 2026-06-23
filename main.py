@@ -1090,6 +1090,7 @@ class FlyPinWindow(QMainWindow):
             self.report_detail_table.setColumnWidth(c, w)
         self.report_detail_table.horizontalHeader().setStretchLastSection(True)
         self.report_detail_table.verticalHeader().setDefaultSectionSize(38)
+        self.report_detail_table.verticalHeader().setFixedWidth(45)
         self.report_detail_table.setWordWrap(False)
         self.report_detail_table.verticalHeader().setVisible(True)
         self.report_detail_table.setStyleSheet(TABLE_GLOBAL_STYLE)
@@ -1572,6 +1573,11 @@ class FlyPinWindow(QMainWindow):
 
         for i, r in enumerate(rows):
             table.insertRow(i)
+            # 左侧行号 = 全局序号（随分页递增）
+            row_no = QTableWidgetItem(str(s + i + 1))
+            row_no.setTextAlignment(Qt.AlignCenter)
+            row_no.setFont(GLOBAL_FONT)
+            table.setVerticalHeaderItem(i, row_no)
             bg = QColor("#fff") if i % 2 == 0 else QColor("#f8f9fa")
 
             org = str(r.get("ORG_ID") or "")
