@@ -653,7 +653,7 @@ class FlyPinWindow(QMainWindow):
         # 右侧详情面板
         detail_frame = QFrame()
         detail_frame.setStyleSheet(f"QFrame{{background:{WHITE};border-radius:8px;border:1px solid {GRAY_BORDER};}}")
-        detail_frame.setFixedWidth(530)
+        detail_frame.setFixedWidth(400)
         detail_layout = QVBoxLayout(detail_frame)
         detail_layout.setContentsMargins(0,0,0,0)
         detail_layout.setSpacing(0)
