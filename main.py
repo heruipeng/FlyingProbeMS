@@ -1074,17 +1074,17 @@ class FlyPinWindow(QMainWindow):
         self.report_detail_table = QTableWidget()
         self.report_detail_table.setFont(GLOBAL_FONT)
         self.report_detail_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.report_headers = ["序号", "厂区", "料号", "版本", "状态", "创建时间", "备注",
+        self.report_headers = ["厂区", "料号", "版本", "状态", "创建时间", "备注",
                         "2W输出路径", "2W输出人", "2W输出开始时间", "2W输出完成时间", "2W输出总耗时", "2W测试点", "2W检查人", "2W检查开始时间","2W检查完成时间","2W检查总耗时","2W最后更新时间","2W最后更新人",
                         "4W输出路径", "4W输出人", "4W输出开始时间", "4W输出完成时间", "4W输出总耗时", "4W测试点", "4W检查人", "4W检查开始时间","4W检查完成时间","4W检查总耗时","4W最后更新时间","4W最后更新人",
                         ]
         self.report_detail_table.setColumnCount(len(self.report_headers))
         self.report_detail_table.setHorizontalHeaderLabels(self.report_headers)
-        rpt_col_width = {0: 50, 1: 85, 2: 140, 3: 55, 4: 80, 5: 140, 6: 180, 7: 70, 8: 70,
-                         9: 75, 10: 140, 11: 75, 12: 75, 13: 140, 14: 75,
-                         15: 75, 16: 140, 17: 75, 18: 75, 19: 140, 20: 75,
-                         21: 75, 22: 140, 23: 75, 24: 75, 25: 140, 26: 75,
-                         27: 75, 28: 140, 29: 75, 30: 75
+        rpt_col_width = {0: 85, 1: 140, 2: 55, 3: 80, 4: 140, 5: 180, 6: 70, 7: 70,
+                         8: 75, 9: 140, 10: 75, 11: 75, 12: 140, 13: 75,
+                         14: 75, 15: 140, 16: 75, 17: 75, 18: 140, 19: 75,
+                         20: 75, 21: 140, 22: 75, 23: 75, 24: 140, 25: 75,
+                         26: 75, 27: 140, 28: 75, 29: 75
                          }
         for c, w in rpt_col_width.items():
             self.report_detail_table.setColumnWidth(c, w)
@@ -1584,8 +1584,7 @@ class FlyPinWindow(QMainWindow):
                 remark = remark[:57] + "..."
 
             items_data = [
-                str(s + i + 1),                                              # 0  序号
-                factory,                                                     # 1  厂区
+                factory,                                                     # 0  厂区
                 str(r.get("ITEM_NO") or ""),                                # 2  料号
                 str(r.get("REV") or ""),                                    # 3  版本
                 status,                                                      # 4  状态
@@ -1742,7 +1741,7 @@ class FlyPinWindow(QMainWindow):
 
         if self.report_view_index == 0:
             pre = "飞针测试数据明细"
-            headers = self.report_headers[1:]
+            headers = self.report_headers
             file_path, _ = QFileDialog.getSaveFileName(
                 self, "导出明细CSV", f"{pre}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 "CSV文件 (*.csv)"
