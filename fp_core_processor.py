@@ -50,7 +50,6 @@ import psutil
 # 弹窗依赖
 import ctypes
 from ctypes import wintypes
-import pyautogui
 
 # 项目内部依赖
 import package.Oracle_DB as Oracle_DB
@@ -915,11 +914,12 @@ class FlyingProbeCoreProcessor:
             side = info['gROWside'][n]
             if context == 'board' and info['gROWlayer_type'][n] == 'signal' and side in ['top','bottom']:
                 self.gen.COM(f'ezfix_display_layer,name={layer_name},display=yes')
-                # 直接触发windows本地快捷键P/T,选择PAD，然后PAD2LINE
-                # 按下字母P
-                pyautogui.press('P')
-                time.sleep(1)
-                pyautogui.press('T')
+                # import pyautogui
+                # # 直接触发windows本地快捷键P/T,选择PAD，然后PAD2LINE
+                # # 按下字母P
+                # pyautogui.press('P')
+                # time.sleep(1)
+                # pyautogui.press('T')
                 self.gen.COM(f'ezfix_display_layer,name={layer_name},display=no')
         self.gen.COM('filter_reset,filter_name=popup')
 
