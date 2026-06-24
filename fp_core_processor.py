@@ -1310,7 +1310,33 @@ class FlyingProbeCoreProcessor:
                 else:
                     output_path = self.output_4w_path_network
 
-                if self.mode in ['check']:
+                if self.mode in ['input']:
+                    if test_point != '':
+                        if output_mode == '2w':
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                TEST_POINT_2W = '{test_point}',
+                                LAST_UPDATE_DATE_2W = SYSDATE,
+                                LAST_UPDATED_BY_2W = '{self.user_id}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
+                        else:
+                            sql = f"""
+                            UPDATE
+                                INP.INP_FLYPIN_PROBE_TOOL_ALERT
+                            SET
+                                TEST_POINT_4W = '{test_point}',
+                                LAST_UPDATE_DATE_4W = SYSDATE,
+                                LAST_UPDATED_BY_4W = '{self.user_id}'
+                            WHERE
+                                data_id = {self.data_id}
+                            """
+                    else:
+                        return
+                elif self.mode in ['check']:
                     STATUS = '待转换'
                     if output_mode == '2w':
                         if test_point != '':
