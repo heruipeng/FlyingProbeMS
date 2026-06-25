@@ -1104,15 +1104,15 @@ class FlyingProbeCoreProcessor:
         self.open_step(job, self.run_step)
         self.gen.COM('units,type=inch')
         self.delete_non_board_layers()
+        self.check_mask_layers()
+
+        if self.is_auto_mode():
+            self.check_board_type()
 
         if self.mode in ['check','input']:
             # show_error_message("温馨提示", '请认真核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
             # self.gen.PAUSE('请核对生成的测试点资料是否正确,如有问题,请修正后重新输出...')
             return
-
-        if self.is_auto_mode():
-            self.check_mask_layers()
-            self.check_board_type()
 
         # 网络比对检查
         check_net = True
