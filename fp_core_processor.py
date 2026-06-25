@@ -532,13 +532,13 @@ class FlyingProbeCoreProcessor:
             if s != 16:
                 raise Exception(err)
             else:
-                s = show_error_message("阻焊层检查", f'{err}...\n是否继续?')
-                if s != 16:
-                    raise Exception(err)
-                else:
-                    self.gen.PAUSE(err)
-                    logger.info(f"【{self.raw_job}】阻焊层检查通过")
-                    return
+                # s = show_error_message("阻焊层检查", f'{err}...\n是否继续?')
+                # if s != 16:
+                #     raise Exception(err)
+                # else:
+                self.gen.PAUSE(err)
+                logger.info(f"【{self.raw_job}】阻焊层检查通过")
+                return
 
     def run_net_compare(self, comp_step, note):
         """
