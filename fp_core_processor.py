@@ -57,7 +57,7 @@ import fp_config
 # from gateway import Gateway
 from package.genCOM_36 import GEN_COM
 # import ezcam.main as GEN_COM
-from PyQt5.QtWidgets import QDialog, QApplication
+from PyQt5.QtWidgets import QDialog, QApplication, QInputDialog
 from package.MessageBox import MessageBox
 
 # from package.wechat_robot import WechatRobotSender
@@ -785,6 +785,16 @@ class FlyingProbeCoreProcessor:
             adj_net_dist = 50
         else:
             adj_net_dist = 80
+        # 非全自动模式：弹窗允许手动输入邻近网络距离
+        if not self.is_auto_mode():
+            adj_net_dist, ok = QInputDialog.getInt(
+                None, '邻近网络距离设定',
+                f'当前工厂: {self.factory_code}\n请输入邻近网络距离 (mil):',
+                value=adj_net_dist, min=1, max=1000, step=1
+            )
+            if not ok:
+                adj_net_dist = 50  # 用户取消时使用默认值50
+            logger.info(f"【{self.raw_job}】手动设定邻近网络距离: {adj_net_dist} mil")
 
         steps = self.gen.DO_INFO(f'-t job -e {job} -d STEPS_LIST -m script')['gSTEPS_LIST']
         if 'set' in steps:
