@@ -950,11 +950,11 @@ class FlyPinWindow(QMainWindow):
 
         self.btn_2w_output.clicked.connect(self.do_2w_make)
         self.btn_2w_check.clicked.connect(self.do_2w_check)
-        self.btn_2w_input.clicked.connect(self.do_input)
+        self.btn_2w_input.clicked.connect(lambda: self.do_input('2w'))
         self.btn_2w_convert.clicked.connect(self.do_convert)
         self.btn_4w_output.clicked.connect(self.do_4w_out)
         self.btn_4w_check.clicked.connect(self.do_4w_check)
-        self.btn_4w_input.clicked.connect(self.do_input)
+        self.btn_4w_input.clicked.connect(lambda: self.do_input('4w'))
         self.btn_4w_convert.clicked.connect(self.do_convert)
         self.btn_2w_upload.clicked.connect(lambda: self.do_upload('2w'))
         # self.btn_4w_upload.clicked.connect(lambda: self.do_upload('4w'))
@@ -2484,27 +2484,27 @@ class FlyPinWindow(QMainWindow):
         """兼容旧版：2W检查"""
         self.do_2w_check()
 
-    def do_input(self):
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle("温馨提示")
-        msg_box.setText("请选择导入资料类型")
-        msg_box.setIcon(QMessageBox.Information)
-
-        btn_2w = msg_box.addButton("2W", QMessageBox.AcceptRole)
-        btn_4w = msg_box.addButton("4W", QMessageBox.RejectRole)
-        btn_close = msg_box.addButton("关闭", QMessageBox.RejectRole)
-
-        d = msg_box.exec_()
-
-        input_mode = '2w'
-        if msg_box.clickedButton() == btn_2w:
-            input_mode = '2w'
-        elif msg_box.clickedButton() == btn_4w:
-            input_mode = '4w'
-        elif msg_box.clickedButton() == btn_close:
-            return
+    def do_input(self,mode):
+        # msg_box = QMessageBox()
+        # msg_box.setWindowTitle("温馨提示")
+        # msg_box.setText("请选择导入资料类型")
+        # msg_box.setIcon(QMessageBox.Information)
+        #
+        # btn_2w = msg_box.addButton("2W", QMessageBox.AcceptRole)
+        # btn_4w = msg_box.addButton("4W", QMessageBox.RejectRole)
+        # btn_close = msg_box.addButton("关闭", QMessageBox.RejectRole)
+        #
+        # d = msg_box.exec_()
+        #
+        # input_mode = '2w'
+        # if msg_box.clickedButton() == btn_2w:
+        #     input_mode = '2w'
+        # elif msg_box.clickedButton() == btn_4w:
+        #     input_mode = '4w'
+        # elif msg_box.clickedButton() == btn_close:
+        #     return
         fc = FACTORY_ID_TO_NUM.get(self.current_org_id, self.current_org_id)
-        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "input", input_mode)
+        ok = self.execute_single_task(fc, self.current_did, self.current_pn, self.LOGIN_USER, "input", mode)
         self.update_single_row(self.current_did)
 
     def do_convert(self):

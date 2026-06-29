@@ -505,10 +505,10 @@ class FlyingProbeCoreProcessor:
             if self.gen.DO_INFO(f'-t layer -e {self.internal_job}/{self.run_step}/{layer_name} -d EXISTS -m script')['gEXISTS'] == 'yes':
                 self.gen.COM(f'delete_layer,layer={layer_name}')
 
-    def delete_non_board_layers(self):
+    def delete_non_board_layers(self,job):
         """删除非board属性图层，仅保留board层与外形/钻孔层"""
         logger.info(f"【{self.raw_job}】开始清理非board属性图层")
-        info = self.gen.DO_INFO(f'-t matrix -e {self.internal_job}/matrix -d ROW -m script')
+        info = self.gen.DO_INFO(f'-t matrix -e {job}/matrix -d ROW -m script')
         for n in range(len(info['gROWname'])):
             layer_name = info['gROWname'][n]
             context = info['gROWcontext'][n]
@@ -516,10 +516,10 @@ class FlyingProbeCoreProcessor:
                 self.gen.COM(f'delete_layer,layer={layer_name}')
         logger.info(f"【{self.raw_job}】非board图层清理完成")
 
-    def check_mask_layers(self):
+    def check_mask_layers(self,job):
         """检查阻焊层是否存在，不存在则报错"""
         logger.info(f"【{self.raw_job}】检查阻焊层是否存在")
-        info = self.gen.DO_INFO(f'-t matrix -e {self.internal_job}/matrix -d ROW -m script')
+        info = self.gen.DO_INFO(f'-t matrix -e {job}/matrix -d ROW -m script')
         for n in range(len(info['gROWname'])):
             if info['gROWcontext'][n] == 'board' and info['gROWlayer_type'][n] == 'solder_mask':
                 logger.info(f"【{self.raw_job}】阻焊层检查通过")
@@ -943,7 +943,10 @@ class FlyingProbeCoreProcessor:
 
     def import_job_from_tgz(self,job):
         """从TGZ文件导入工程"""
-        tgz_file = self._build_tgz_file_path(job)
+        import_name = job
+        if self.mode in ['task'] and self.internal_job != job:
+            import_name = self.internal_job
+        tgz_file = self._build_tgz_file_path(import_name)
         logger.info(f"【{self.raw_job}】开始导入TGZ：{tgz_file}")
         if not os.path.exists(tgz_file):
             err = f"TGZ文件不存在：{tgz_file}"
@@ -1113,8 +1116,8 @@ class FlyingProbeCoreProcessor:
         self.open_job(job)
         self.open_step(job, self.run_step)
         self.gen.COM('units,type=inch')
-        self.delete_non_board_layers()
-        self.check_mask_layers()
+        self.delete_non_board_layers(job)
+        self.check_mask_layers(job)
 
         if self.is_auto_mode():
             self.check_board_type()
@@ -1126,9 +1129,9 @@ class FlyingProbeCoreProcessor:
 
         # 网络比对检查
         check_net = True
-        if self.gen.DO_INFO(f'-t step -e {self.internal_job}/{self.net_compare_step} -d EXISTS -m script')['gEXISTS'] == 'no':
+        if self.gen.DO_INFO(f'-t step -e {job}/{self.net_compare_step} -d EXISTS -m script')['gEXISTS'] == 'no':
             self.net_compare_step = 'orig'
-            if self.gen.DO_INFO(f'-t step -e {self.internal_job}/{self.net_compare_step} -d EXISTS -m script')['gEXISTS'] == 'no':
+            if self.gen.DO_INFO(f'-t step -e {job}/{self.net_compare_step} -d EXISTS -m script')['gEXISTS'] == 'no':
                 err = f"网络对比STEP不存在"
                 if self.is_auto_mode():
                     raise Exception(err)
@@ -1246,10 +1249,11 @@ class FlyingProbeCoreProcessor:
 
                 elif m == "4w":
                     start_time_4W = datetime.datetime.now()
-                    if self.mode in ['input','check']:
-                        job = self.internal_job + '-4w'
-                    else:
-                        job = self.internal_job
+                    # if self.mode in ['input','check']:
+                    #     job = self.internal_job + '-4w'
+                    # else:
+                    #     job = self.internal_job
+                    job = self.internal_job + '-4w'
                     self.prepare_common_process(m,job)
                     test_point = self.process_single_mode(m,job)
                     end_time_4W = datetime.datetime.now()
