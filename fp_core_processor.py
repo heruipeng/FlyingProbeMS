@@ -1246,7 +1246,10 @@ class FlyingProbeCoreProcessor:
 
                 elif m == "4w":
                     start_time_4W = datetime.datetime.now()
-                    job = self.internal_job + '-4w'
+                    if self.mode in ['input','check']:
+                        job = self.internal_job + '-4w'
+                    else:
+                        job = self.internal_job
                     self.prepare_common_process(m,job)
                     test_point = self.process_single_mode(m,job)
                     end_time_4W = datetime.datetime.now()
