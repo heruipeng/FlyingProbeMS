@@ -1049,7 +1049,9 @@ class FlyingProbeCoreProcessor:
                 sel_mark = True
         if sel_mark:
             self.gen.COM('chklist_single,action=ezcam_dfm_nfp_removal,show=yes')
-            self.gen.COM('chklist_cupd,chklist=ezcam_dfm_nfp_removal,nact=1,params=((pp_layer=.affected)(pp_delete=Duplicate\;Drilled Over\;Covered)(pp_work=Features)(pp_drill=)(pp_non_drilled=No)(pp_in_selected=All)(pp_remove_mark=Remove)),mode=regular')
+            # self.gen.COM('chklist_cupd,chklist=ezcam_dfm_nfp_removal,nact=1,params=((pp_layer=.affected)(pp_delete=Duplicate\;Drilled Over\;Covered)(pp_work=Features)(pp_drill=)(pp_non_drilled=No)(pp_in_selected=All)(pp_remove_mark=Remove)),mode=regular')
+            # 修复生成测试点丢PAD异常 rphe 2026.07.02
+            self.gen.COM('chklist_cupd,chklist=ezcam_dfm_nfp_removal,nact=1,params=((pp_layer=.affected)(pp_delete=Drilled Over\;Covered)(pp_work=Features)(pp_drill=)(pp_non_drilled=No)(pp_in_selected=All)(pp_remove_mark=Remove)),mode=regular')
             self.gen.COM('chklist_run,chklist=ezcam_dfm_nfp_removal,nact=1,area=Global')
             self.gen.COM('chklist_close,chklist=ezcam_dfm_nfp_removal,mode=hide')
 
